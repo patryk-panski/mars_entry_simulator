@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
       <meta charset="utf-8">
-      <meta name="description" content="An interactive 3D martian entry of a decelerator.">
+      <meta name="description" content="An interactive 3D martian entry simulation.">
       <title>Martian Entry Simulation</title>
 
       <!--CSS-->
@@ -12,6 +12,7 @@
       <script src="scripts/lib/numeric-1.2.6.min.js"></script>
       <script src="scripts/lib/everpolate.browserified.min.js"></script>
 
+      <!-- GET RID OF THOSE to enforce using vanilla JS -->
       <script src="scripts/lib/lodash.js"></script>
       <script src="scripts/lib/jquery-3.2.1.min.js"></script>
 
@@ -27,7 +28,7 @@
       <script src="scripts/lib/dat.GUI.min.js"></script>
 
       <!--SIMULATION SCRIPT-->
-      <script src="scripts/simulation.js" defer></script>
+      <script src="scripts/simulation.js"></script>
 
     </head>
     <body>
@@ -38,7 +39,7 @@
       <div id="instruction">
         <h2>Instructions:</h2>
         <ol>
-          <li>Change initial parameters using the user interface on the right.</li>
+          <li>Change the initial parameters using the user interface on the right.</li>
           <li>Press the GET TRAJECTORY button to calculate trajectory for your inputs and wait until the process is done.</li>
           <li>Now you can control animation with the buttons in the ANIMATION folder.</li>
           <li>You can watch live outputs of trajectory data on the left.</li>
@@ -74,29 +75,34 @@
       <div id="progress"></div>
 
       <!-- FOOTNOTE -->
-      <div id="footnote"><p> Created by Patryk Szczepanski <button>Help</button><br/>First year MEng Aeronautics student<br/><br/>Based on MATLAB entry simulation code by Lisa Peacocke <br/> dsfsdfdfdsfdfds</p></div>
+      <div id="footnote"><p> Created by <b>Patryk Szczepanski</b>, MEng Aeronautics Student <button>Help</button> <br/><br/>Based on MATLAB Entry Simulation code by <b>Lisa Peacocke</b> <br/>Created with invaluable support from <b>Dr Matthew Santer</b> and <b>Dr Paul Bruce</b></p></div>
 
 
       <script>
-      // controll the buttons
-      $("#instruction button").click(function() {
-        $("#instruction").hide();
-      });
-      $('#footnote button').click(function() {
-        $("#instruction").show();
-      })
+      var instruction = document.querySelector('#instruction');
+      
+      //when clicked hide the instruction
+      document.querySelector('#instruction button').addEventListener('click', function() { 
+        instruction.style = "display: none;";
+      }, false)
+      
+      //when clicked show the instruction
+      document.querySelector('#footnote button').addEventListener('click', function() {
+        instruction.style = "";
+      }, false);
+      
+      //when DOM is loaded run methods from main JS file
+      document.addEventListener('DOMContentLoaded', function(){ 
+        lander.defineMesh(); //(MODEL)
+        livePlots.init(); //(VIEW)
+        liveOutputs.init(); //(VIEW)
+        G.initScene(); //(VIEW)
+        //G.manager.onLoad = function() {//display the simulation after Mars textures have been loaded
+        setupGUI(); //(CONTROLLER)
+        G.render(); //(VIEW)
+        // };
+      }, false);
 
-        $(document).ready( function() {
-
-          lander.defineMesh(); //(MODEL)
-          livePlots.init(); //(VIEW)
-          liveOutputs.init(); //(VIEW)
-          G.initScene(); //(VIEW)
-          //G.manager.onLoad = function() {//display the simulation after Mars textures have been loaded
-            setupGUI(); //(CONTROLLER)
-            G.render(); //(VIEW)
-        //  };
-        });
       </script>
     </body>
 </html>
