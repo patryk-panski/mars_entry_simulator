@@ -1,0 +1,102 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="description" content="An interactive 3D martian entry of a decelerator.">
+      <title>Martian Entry Simulation</title>
+
+      <!--CSS-->
+      <link rel="stylesheet" href="style.css" />
+
+      <!--Libraries-->
+      <script src="scripts/lib/numeric-1.2.6.min.js"></script>
+      <script src="scripts/lib/everpolate.browserified.min.js"></script>
+
+      <script src="scripts/lib/lodash.js"></script>
+      <script src="scripts/lib/jquery-3.2.1.min.js"></script>
+
+      <script src="scripts/lib/Chart.min.js"></script>
+
+      <script src="scripts/lib/three.min.js"></script>
+      <script src="scripts/lib/TrackballControls.js"></script>
+      <script src="scripts/lib/Stats.js"></script>
+      <script src="scripts/lib/THREEx.WindowResize.js"></script>
+      <script src="scripts/lib/THREEx.FullScreen.js"></script>
+      <script src="scripts/lib/THREEx.KeyboardState.js"></script>
+
+      <script src="scripts/lib/dat.GUI.min.js"></script>
+
+      <!--SIMULATION SCRIPT-->
+      <script src="scripts/simulation.js" defer></script>
+
+    </head>
+    <body>
+      <!--TITLE-->
+      <h1>Imperial Mars Entry Simulation</h1>
+
+      <!-- INSTRUCTION -->
+      <div id="instruction">
+        <h2>Instructions:</h2>
+        <ol>
+          <li>Change initial parameters using the user interface on the right.</li>
+          <li>Press the GET TRAJECTORY button to calculate trajectory for your inputs and wait until the process is done.</li>
+          <li>Now you can control animation with the buttons in the ANIMATION folder.</li>
+          <li>You can watch live outputs of trajectory data on the left.</li>
+          <li>Press any data point on the first plot to replay the simulation from that moment.</li>
+          <li>To save your inputs for later reference use the small menu at the top of the UI.</li>
+        </ol>
+        <h2>Goal:</h2>
+        <p>Set initial parameters so that the lander can decelerate through the atmosphere until it reaches right conditions to deploy a supersonic parachute.</p>
+        <ul>
+          <li>Altitude: above 8 km</li>
+          <li>Mach number: 1.1 - 2.2</li>
+          <li>Dynamic pressure: 239 - 850 Pa</li>
+        </ul>
+          <button>Close</button>
+      </div>
+
+      <!--ALTITUDE AND VELOCITY OUTPUTS-->
+      <div id="outputs1">
+        <p>Altitude: <span id="altitude"></span></p>
+        <p>Velocity: <span id="velocity"></span></p>
+        <p class="small">Dynamic Pressure: <span id="dynamicPress"></span></p>
+        <p class="small">Stagnation temperature: <span id="tempNose"></span></p>
+      </div>
+
+      <!--SIMULATION-->
+      <div id="webgl"></div>
+
+      <!--PLOTS-->
+      <canvas id="plot1" width="400" height="250"></canvas>
+      <canvas id="plot2" width="400" height="250"></canvas>
+
+      <!--PROGRESS BAR-->
+      <div id="progress"></div>
+
+      <!-- FOOTNOTE -->
+      <div id="footnote"><p> Created by Patryk Szczepanski <button>Help</button><br/>First year MEng Aeronautics student<br/><br/>Based on MATLAB entry simulation code by Lisa Peacocke <br/> dsfsdfdfdsfdfds</p></div>
+
+
+      <script>
+      // controll the buttons
+      $("#instruction button").click(function() {
+        $("#instruction").hide();
+      });
+      $('#footnote button').click(function() {
+        $("#instruction").show();
+      })
+
+        $(document).ready( function() {
+
+          lander.defineMesh(); //(MODEL)
+          livePlots.init(); //(VIEW)
+          liveOutputs.init(); //(VIEW)
+          G.initScene(); //(VIEW)
+          //G.manager.onLoad = function() {//display the simulation after Mars textures have been loaded
+            setupGUI(); //(CONTROLLER)
+            G.render(); //(VIEW)
+        //  };
+        });
+      </script>
+    </body>
+</html>

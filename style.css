@@ -1,0 +1,127 @@
+body {
+  margin: 0;
+}
+
+/*style the title of the project*/
+h1 {
+  width: 800px;
+  height: auto;
+
+  position: fixed;
+  left: 50%;
+  margin-left: -400px; /*half of width*/
+
+  color: rgb(255, 120, 0);
+  font: bold 40px Verdana;
+  text-align: center;
+  text-shadow: 1px 1px 3px;
+}
+
+/*style the instruction window*/
+
+div#instruction {
+  width: 500px;
+  height: 500px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  margin-top: -250px;
+  margin-left: -250px;
+
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font: 13px Verdana;
+  border: 2px solid rgba(255, 120, 0, 0.8);
+  border-radius: 6px;
+  z-index: 10;
+}
+
+div#instruction > h2 {
+  text-align: center;
+}
+
+div#instruction li, div#instruction p {
+  padding: 4px 10px 4px;
+}
+
+div#instruction button {
+  width: 50px;
+  position: relative;
+  background-color: white;
+  left: 50%;
+  margin-left: -25px;
+  border: none;
+  text-align: center;
+  cursor: pointer;
+}
+
+/*style footnote of the simulation*/
+div#footnote {
+  width: 200;
+  position: fixed;
+  bottom: 0%;
+  right: 0%;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 5px 5px 5px 5px;
+  border-left: 3px solid rgb(255, 120, 0);
+  border-radius: 5px;
+}
+
+div#footnote > p {
+  margin: auto;
+  color: white;
+  font: 10px Verdana;
+}
+
+div#footnote button {
+  float: right;
+  position: relative;
+  top: 3px;
+  right: 3px;
+  background-color: white;
+  border: none;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/*style div with the altitude and velocity outputs*/
+div#outputs1 {
+  height: 150px;
+  width: 200px;
+  position: fixed;
+  top: 47px;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 4px solid black;
+  border-radius: 0px 15px 15px 0px;
+}
+
+div#outputs1 p {
+  margin: 10% 0 10% 5%;
+  color: white;
+  font: 13px Verdana;
+}
+
+div#outputs1 p.small {
+  font: 10px Verdana;
+}
+
+/*style plots area*/
+canvas#plot1 {
+  position: fixed;
+  top: 28.5%;
+  left: 0;
+  background: white;
+  border: 4px solid black;
+  border-radius: 0px 15px 15px 0px;
+  cursor: pointer;
+}
+
+canvas#plot2 {
+  position: fixed;
+  top: 64%;
+  left: 0;
+  background: white;
+  border: 4px solid black;
+  border-radius: 0px 15px 15px 0px;
+}
