@@ -38,7 +38,7 @@ const lander = {
   mesh: {
     scale: 100000, //variable defining scale 1:value between real results and graphics dimensions
     landerMagnification: 3000,
-    nop: 20, //number of mesh points in two direction of the mesh surface
+    nop: 20, //number of mesh points in two directions of the mesh surface
     x: null, //x, y, z matrices defining mesh coordinates used for physics calculation
     y: null,
     z: null,
@@ -46,7 +46,7 @@ const lander = {
     rLath: null
   },
   meshgrid(x, y) {
-   //define function meshgrid (same as in MatLab) - returns X, Y matrices . used for defineMesh
+   //define function meshgrid (same as in MatLab) - returns X, Y matrices. Used for defineMesh
 
     let X = [], Y = []; //initialize final matrices
     let xLength = x.length, yLength = y.length;
@@ -1106,18 +1106,18 @@ const livePlots = {
                         ///////////////////////////
 
 const liveOutputs = {
-  $el: {
-    alt: $("#altitude"),
-    vel: $("#velocity"),
-    qInf: $("#dynamicPress"),
-    tempNose: $("#tempNose")
+  DOMel: {
+    alt: document.querySelector('#altitude'),
+    vel: document.querySelector('#velocity'),
+    qInf: document.querySelector('#dynamicPress'),
+    tempNose: document.querySelector('#tempNose')
   },
   init() {
     //initialize live output just after trajectory is calculated
-    this.$el.alt.text(_.toString(_.round(traj.cond.h)) + " m");
-    this.$el.vel.text(_.toString(_.round(traj.cond.vInf)) + " m/s");
-    this.$el.qInf.text("0 Pa");
-    this.$el.tempNose.text( "0 K");
+    this.DOMel.alt.innerHTML = _.toString(_.round(traj.cond.h)) + " m";
+    this.DOMel.vel.innerHTML = _.toString(_.round(traj.cond.vInf)) + " m/s";
+    this.DOMel.qInf.innerHTML = "0 Pa";
+    this.DOMel.tempNose.innerHTML = "0 K";
 
   },
   update(time, { spline }) {
@@ -1137,24 +1137,24 @@ const liveOutputs = {
     let mach = traj.calcAtmoProperties(altitude, velocity, lander)[10];
 
     //make changes to DOM elements, update current values
-    this.$el.alt.text(_.toString(altitude) + ' m');
-    this.$el.vel.text(_.toString(velocity) + ' m/s');
-    this.$el.qInf.text(_.toString(dynamicPress) + ' Pa');
-    this.$el.tempNose.text(_.toString(tempNose) + ' K');
+    this.DOMel.alt.innerHTML = _.toString(altitude) + ' m';
+    this.DOMel.vel.innerHTML = _.toString(velocity) + ' m/s';
+    this.DOMel.qInf.innerHTML = _.toString(dynamicPress) + ' Pa';
+    this.DOMel.tempNose.innerHTML = _.toString(tempNose) + ' K';
 
     //check for the limits of the numbers and colour them accordingly
-    (altitude > 8000) ? this.$el.alt.css("color", 'green') : this.$el.alt.css("color", 'red');
+    (altitude > 8000) ? this.DOMel.alt.style.color = 'green' : this.DOMel.alt.style.color = 'red';
 
     if (mach < 2.2 && mach > 1.1) {
-      this.$el.vel.css('color', 'green');
+      this.DOMel.vel.style.color = 'green';
     } else {
-      this.$el.vel.css('color', 'red');
+      this.DOMel.vel.style.color = 'red';
     }
 
     if (dynamicPress < 850 && dynamicPress > 239) {
-      this.$el.qInf.css('color', 'green');
+      this.DOMel.qInf.style.color = 'green';
     } else {
-      this.$el.qInf.css('color', 'red');
+      this.DOMel.qInf.style.color = 'red';
     }
 
 
