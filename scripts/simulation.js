@@ -104,24 +104,24 @@ const lander = {
        let nop = this.mesh.nop;
      //define number of mesh divisions depending on the lengths of the three parts
        let curveLength = rNose * (Math.PI / 2 - theta) + frustumSide + rShoulder * theta;
-       let nopNose = _.round(nop * rNose * (Math.PI / 2 - theta) / curveLength);
-       let nopFrustum = _.round(nop * frustumSide / curveLength);
+       let nopNose = Math.round(nop * rNose * (Math.PI / 2 - theta) / curveLength);
+       let nopFrustum = Math.round(nop * frustumSide / curveLength);
        let nopShoulder = nop - nopNose - nopFrustum + 2; //two mesh points are doubled later, add to shoulder
      //define radial vectors for nose (r1), frustum (r2) and shoulder (r3)
        let r1 = numeric.linspace(0, noseL, nopNose);
-       let r2 = _.tail(numeric.linspace(noseL, frustumL + noseL, nopFrustum));
-       let r3 = _.tail(numeric.linspace(frustumL + noseL, rBody, nopShoulder));
+       let r2 = numeric.linspace(noseL, frustumL + noseL, nopFrustum).slice(1);
+       let r3 = numeric.linspace(frustumL + noseL, rBody, nopShoulder).slice(1);
 
      //define rhoC and thetaC coordinates (cylindrical coordinates)
-       let rhoC = _.concat(r1, r2, r3); //combine to create single vector for full heatshield radius - [r1,r2(2:end),r3(2:end)]
+       let rhoC = r1.concat(r2, r3); //combine to create single vector for full heatshield radius - [r1,r2(2:end),r3(2:end)]
        let thetaC = numeric.linspace(0, 2 * Math.PI, rhoC.length); //theta angle vector for full heatshield
 
      //define rLath, xLath coordinates for LatheGeometry in THREE.js
        let rLath = rhoC; //r
-       let xLath = _.concat(
-         _.map(r1, i => - Math.sqrt(Math.abs(rNose * rNose - i * i)) + rNose),
-         _.map(r2, i => i / Math.tan(theta) + coneVertex),
-         _.map(r3, i => - Math.sqrt(Math.abs(rShoulder * rShoulder - (i - (rBody - rShoulder)) * (i - (rBody - rShoulder)))) + (shoulderL + frustumH + noseH))); //x
+       let xLath = 
+         r1.map(i => - Math.sqrt(Math.abs(rNose * rNose - i * i)) + rNose).concat(
+         r2.map(i => i / Math.tan(theta) + coneVertex),
+         r3.map(i => - Math.sqrt(Math.abs(rShoulder * rShoulder - (i - (rBody - rShoulder)) * (i - (rBody - rShoulder)))) + (shoulderL + frustumH + noseH))); //x
 
      //call meshgrid function for theta and rho
        let [ thetaCM, rhoCM ] = this.meshgrid(thetaC, rhoC);
@@ -139,11 +139,11 @@ const lander = {
            temp.push( - Math.sqrt(Math.abs(rShoulder * rShoulder - (rhoCM[i][j] - (rBody - rShoulder)) * (rhoCM[i][j] - (rBody - rShoulder)))) + (shoulderL + frustumH + noseH));
          }
        }
-       //temp = _.map(rhoCM[i], function(item) {return -Math.sqrt(Math.abs(rNose*rNose-item*itemp))+rNose;});
+       //temp = rhoCM[i].map(function(item) {return -Math.sqrt(Math.abs(rNose*rNose-item*itemp))+rNose;});
        x.push(temp);
      }
 
-       let xN = _.map(x, i => _.map(i, j => - j));
+       let xN = x.map(i => i.map(j => -j));
 
      // y and z matrices with cartesian coordinates of the meshgrid
      let y = numeric.mul(rhoCM, numeric.cos(thetaCM)); //y = rhoC.*cos(thetaC)
@@ -682,7 +682,7 @@ const traj = (function (lander) {
 
       let checkArr = [1 - mach, 7000 - h, 200 - qInf];
       //conditions a bit lower to enable game logic to check and display the outcome
-      if (_.every(checkArr, (el) => (el > 0)) || h < 7000 || mach < 1) {
+      if (checkArr.every((el) => (el > 0)) || h < 7000 || mach < 1) {
         return 1; //stop the ODE solver
       } else {
         return -1; //continue with calculations
@@ -829,18 +829,18 @@ const results = {
 
 
     //filter the results and set them to the object arr property
-    arr.t = _.filter(time, el => !isNaN(el));
-    arr.alt = _.filter(alt, el => !isNaN(el));;
-    arr.pos = _.filter(pos, el => !isNaN(el));;
-    arr.rotN = _.filter(rotN, el => !isNaN(el));;
-    arr.rotB = _.filter(rotB, el => !isNaN(el));;
-    arr.xVel = _.filter(xVel, el => !isNaN(el));;
-    arr.yVel = _.filter(yVel, el => !isNaN(el));;
-    arr.zVel = _.filter(zVel, el => !isNaN(el));;
-    arr.vel = _.filter(vel, el => !isNaN(el));;
-    arr.qInf = _.filter(qInf, el => !isNaN(el));;
-    arr.tempNose = _.filter(tempNose, el => !isNaN(el));;
-    arr.AoA = _.filter(AoA, el => !isNaN(el));;
+    arr.t = time.filter(el => !isNaN(el));
+    arr.alt = alt.filter(el => !isNaN(el));;
+    arr.pos = pos.filter(el => !isNaN(el));;
+    arr.rotN = rotN.filter(el => !isNaN(el));;
+    arr.rotB = rotB.filter(el => !isNaN(el));;
+    arr.xVel = xVel.filter(el => !isNaN(el));;
+    arr.yVel = yVel.filter(el => !isNaN(el));;
+    arr.zVel = zVel.filter(el => !isNaN(el));;
+    arr.vel = vel.filter(el => !isNaN(el));;
+    arr.qInf = qInf.filter(el => !isNaN(el));;
+    arr.tempNose = tempNose.filter(el => !isNaN(el));;
+    arr.AoA = AoA.filter(el => !isNaN(el));;
 
   },
   createSplines(arr, spline) {
@@ -930,13 +930,14 @@ const livePlots = {
     responsive: false, //the chart doesnt resize
     //define event functions
     onClick: function(evt, point) {
-      if (!_.isEmpty(point)) {
+      //test if results.arr object is empty
+      if (Object.keys(results.arr).length !== 0 && results.arr.constructor === Object) {
         let index = point[0]._index;
         let altitude = livePlots.dataset1.data[index].y*1000; // [m] it's monotonous unlike velocity array
         //To Do make it move to interpolated time
         let time = everpolate.linear(altitude, results.arr.alt, results.arr.t)[0];
-        time = _.round(time, 2);
-        G.setTime(time);
+        time = Math.round(time * 100) / 100; //round to 2 decimal places
+        G.setTime(time);  
       }
     },
     scales: {
@@ -1067,13 +1068,13 @@ const livePlots = {
      */
     //interpolate values in the results arrays to find current values
     //and round the value
-    let altitude = _.round(spline.tVSalt.at(time))/1000; //[km]
-    let velocity = _.round(spline.tVSvel.at(time))/1000; //[km/s]
-    //let dynamicPress = _.round(spline.tVSqInf.at(time));
+    let altitude = Math.round(spline.tVSalt.at(time))/1000; //[km]
+    let velocity = Math.round(spline.tVSvel.at(time))/1000; //[km/s]
+    //let dynamicPress = Math.round(spline.tVSqInf.at(time));
 
     //push new data point
     //the following code downsamples the data for the plots
-    let previous = _.last(this.myPlot1.data.datasets[0].data);
+    let previous = this.myPlot1.data.datasets[0].data[this.myPlot1.data.datasets[0].data.length - 1]; //only the last element
     let distance = Math.sqrt(400*(velocity - previous.x) * (velocity - previous.x) + (altitude - previous.y) * (altitude - previous.y));
 
     if (distance > 1) {
@@ -1084,10 +1085,10 @@ const livePlots = {
 
     //interpolate values in the results arrays to find current values
     //and round the value
-    let t = _.round(time, 2); //seconds
-    let AoA = _.round(spline.tVSAoA.at(time)*180/Math.PI, 3); //deg
+    let t = Math.round(time * 100) / 100; //seconds, round to 2 decimal places
+    let AoA = Math.round(spline.tVSAoA.at(time)*180/Math.PI * 1000) / 1000; //deg, round to 3 decimal places
 
-    let previous2 = _.last(this.myPlot2.data.datasets[0].data);
+    let previous2 = this.myPlot2.data.datasets[0].data[this.myPlot2.data.datasets[0].data.length - 1]; //only the last element
     let distance2 = Math.sqrt((t - previous2.x) * (t - previous2.x) + (AoA - previous2.y) * (AoA - previous2.y));
 
     if (distance2 > 0.5) {
@@ -1114,8 +1115,8 @@ const liveOutputs = {
   },
   init() {
     //initialize live output just after trajectory is calculated
-    this.DOMel.alt.innerHTML = _.toString(_.round(traj.cond.h)) + " m";
-    this.DOMel.vel.innerHTML = _.toString(_.round(traj.cond.vInf)) + " m/s";
+    this.DOMel.alt.innerHTML = Math.round(traj.cond.h).toString() + " m";
+    this.DOMel.vel.innerHTML = Math.round(traj.cond.vInf).toString() + " m/s";
     this.DOMel.qInf.innerHTML = "0 Pa";
     this.DOMel.tempNose.innerHTML = "0 K";
 
@@ -1130,17 +1131,17 @@ const liveOutputs = {
 
     //change it into results.sol.at(time) and then take values
     //get current values
-    let altitude = _.round(spline.tVSalt.at(time));
-    let velocity = _.round(spline.tVSvel.at(time));
-    let dynamicPress = _.round(spline.tVSqInf.at(time), 2);
-    let tempNose = _.round(spline.tVStempNose.at(time), 2);
+    let altitude = Math.round(spline.tVSalt.at(time));
+    let velocity = Math.round(spline.tVSvel.at(time));
+    let dynamicPress = Math.round(spline.tVSqInf.at(time) * 100) / 100;
+    let tempNose = Math.round(spline.tVStempNose.at(time) * 100) / 100;
     let mach = traj.calcAtmoProperties(altitude, velocity, lander)[10];
 
     //make changes to DOM elements, update current values
-    this.DOMel.alt.innerHTML = _.toString(altitude) + ' m';
-    this.DOMel.vel.innerHTML = _.toString(velocity) + ' m/s';
-    this.DOMel.qInf.innerHTML = _.toString(dynamicPress) + ' Pa';
-    this.DOMel.tempNose.innerHTML = _.toString(tempNose) + ' K';
+    this.DOMel.alt.innerHTML = altitude.toString() + ' m';
+    this.DOMel.vel.innerHTML = velocity.toString() + ' m/s';
+    this.DOMel.qInf.innerHTML = dynamicPress.toString() + ' Pa';
+    this.DOMel.tempNose.innerHTML = tempNose.toString() + ' K';
 
     //check for the limits of the numbers and colour them accordingly
     (altitude > 8000) ? this.DOMel.alt.style.color = 'green' : this.DOMel.alt.style.color = 'red';
@@ -1167,7 +1168,7 @@ const liveOutputs = {
     }
 
     let checkArr = [1.1 - mach, 8000 - altitude, 239 - dynamicPress];
-    if (_.every(checkArr, (el) => (el > 0)) || altitude <= 8000 || mach <= 1.1) {
+    if (checkArr.every(el => (el > 0)) || altitude <= 8000 || mach <= 1.1) {
       alert("You haven't reached the right conditions to safely deploy a parachute. Try again!");
 
       G.stopAnim();
@@ -1585,7 +1586,7 @@ const G = (function() {
   //play animation
   function playAnim() {
     //don't respond when there are no results
-    if (_.isEmpty(results.arr)) {alert("Press 'SAVE' button to save your current inputs."); return;}
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {alert("Press 'SAVE' button to save your current inputs."); return;}
 
     if (!isPlay) {
       clipAction.play();
@@ -1600,7 +1601,7 @@ const G = (function() {
   //play animation 5 times faster
   function playAnimX5() {
     //don't respond when there are no results
-    if (_.isEmpty(results.arr)) {alert("Press 'SAVE' button to save your current inputs."); return;}
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {alert("Press 'SAVE' button to save your current inputs."); return;}
 
     if (!isPlay) {
       clipAction.play();
@@ -1615,7 +1616,7 @@ const G = (function() {
   //pause running animation
   function pauseAnim() {
     //don't respond when there are no results
-    if (_.isEmpty(results.arr)) {alert("Press 'SAVE' button to save your current inputs."); return;}
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {alert("Press 'SAVE' button to save your current inputs."); return;}
 
     clipAction.paused = true;
     isPlay = false;
@@ -1624,7 +1625,7 @@ const G = (function() {
   //stops running animation
   function stopAnim() {
     //don't respond when there are no results
-    if (_.isEmpty(results.arr)) {alert("Press 'SAVE' button to save your current inputs."); return;}
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {alert("Press 'SAVE' button to save your current inputs."); return;}
 
     clipAction.stop(); //this method also calls reset()
     isPlay = false;
