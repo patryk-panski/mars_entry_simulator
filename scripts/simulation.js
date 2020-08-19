@@ -1728,7 +1728,7 @@ function setupGUI() {
   gui.add(traj, 'current', { Pathfinder: 'pathfinder', Curiosity: 'curiosity', Opportunity: 'opportunity', Phoenix: 'phoenix', Schiaparelli: 'schiaparelli', Spirit: 'spirit' }).name('Atmosphere');
 
   // TRAJECTORY function - save function
-  const save = gui.add(results, 'run').name('Get Trajectory');
+  const save = gui.add(results, 'run').name('GET TRAJECTORY');
   save.onFinishChange(() => { liveOutputs.init(); G.defineAnim(results); });
 
 
