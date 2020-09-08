@@ -87,17 +87,13 @@
       var instruction = document.querySelector('#instruction');
       
       //when clicked hide the instruction
-      document.querySelector('#instruction button').addEventListener('click', function() { 
-        instruction.style = "display: none;";
-      }, false)
+      document.querySelector('#instruction button').addEventListener('click', () => instruction.style = "display: none;", false);
       
       //when clicked show the instruction
-      document.querySelector('#footnote button').addEventListener('click', function() {
-        instruction.style = "";
-      }, false);
+      document.querySelector('#footnote button').addEventListener('click', () => instruction.style = "", false);
       
       //when DOM is loaded run methods from main JS file
-      document.addEventListener('DOMContentLoaded', function(){ 
+      document.addEventListener('DOMContentLoaded', () => { 
         lander.defineMesh(); //(MODEL)
         livePlots.init(); //(VIEW)
         liveOutputs.init(); //(VIEW)

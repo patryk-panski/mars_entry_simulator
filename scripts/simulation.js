@@ -6,7 +6,7 @@
  *
  *
  *
- * 6DOF Entry Trajectory Reconstruction Code with Geometry & Aerodynamics
+ * 6DOF Entry Trajectory Code with Geometry & Aerodynamics
  * @author Patryk Szczepanski
  */
 
@@ -19,10 +19,10 @@
 // //LANDER (MODULE 1)//
 // /////////////////////
 
-// define lander object literal with defineMesh method using lander parameters
+// define lander object with defineMesh method using lander parameters
 const lander = {
-  mass: 980, // * entry mass (kg)
-  diameter: 2.65, // * entry vehicle diameter [m]
+  mass: 980, // * entry mass of the lander (kg)
+  diameter: 2.65, // * diameter of the lander [m]
   get rBody() { return this.diameter / 2; }, // * body radius [m]
   rNose: 0.88, // * nose radius [m]
   get rShoulder() { return this.rNose / 10; }, // * shoulder radius [m]
@@ -34,8 +34,8 @@ const lander = {
   get rPayload() { return this.rBody / 1.6; }, // payload container radius [m]
   heightPayload: 1.4, // payload container height [m]
   // define heatshield properties
-  hsThickness: 0.07,
-  hsDensity: 265,
+  hsThickness: 0.07, // [m]
+  hsDensity: 265, // [kg/m3]
   // mesh of the lander
   mesh: {
     scale: 100000, // variable defining scale 1:value between real results and graphics dimensions
@@ -47,36 +47,47 @@ const lander = {
     xLath: null, // xLath and rLath defining the curve used in geometry module for the mesh
     rLath: null,
   },
+  /**
+   * Returns 2-D grid coordinates based on the coordinates contained in vectors x and y. X is a matrix where
+   * each row is a copy of x, and Y is a matrix where each column is a copy of y. (same as meshgrid in matlab)
+   *
+   * @param {array} x - x-coordinates of points, specified as a vector
+   * @param {array} y - y-coordinates of points, specified as a vector
+   *
+   * @return {array} - the array with matrices X and Y
+   */
   meshgrid(x, y) {
-    // define function meshgrid (same as in MatLab) - returns X, Y matrices. Used for defineMesh
+    // initializes final matrices
+    const X = [];
+    const Y = [];
 
-    const X = []; const Y = []; // initialize final matrices
-    const xLength = x.length; const yLength = y.length;
+    // defines lengths of the vectors
+    const xLength = x.length;
+    const yLength = y.length;
 
+    // creates matrices X and Y
     for (let i = 0; i < yLength; i++) {
-      X.push(x); // add rows of X
-      const temp = []; // temporary array to store rows of Y matrix
+      X.push(x); // adds rows of X
+      const temp = []; // creates an temporary array to store rows of Y matrix
 
       for (let j = 0; j < xLength; j++) {
-        temp.push(y[i]); // generate rows of Y
+        temp.push(y[i]); // generates rows of Y
       }
-      Y.push(temp); // add rows of Y
+      Y.push(temp); // adds rows of Y
     }
     return [X, Y];
   },
+  /**
+   * Calculates mesh nodes of the vehicle in the body frame x, y, z coordinates.
+   * Also defines curve used in graphics module to create the mesh.
+   *
+   * @param {object} this - lander object
+   *
+   * @return {array} - array with x, y, z coordinates of the mesh and xLath, rLath curve coordinates.
+   */
   defineMesh() {
-    /**
-     * Calculates mesh nodes of the vehicle in the body frame x, y, z coordinates.
-     * Also defines curve used in graphics module to create the mesh.
-     *
-     * @param {object} this - contains dimensions of the lander.
-     *
-     * @return {array} - array with x, y, z coordinates of the mesh and xLath, rLath curve coordinates.
-     */
-
-    // variables from the lander object
+    // defines variables from the lander object
     const { rBody, rNose, rShoulder, theta } = this;
-
 
     // define dimensions for nose, frustum and shoulder
     // nose
@@ -359,8 +370,8 @@ const traj = (function traj(lander) {
   }
   /**
    * Calculates cross product of two 3D vectors.
-   *
-   * @param {array} a - vector1, @param {array} b - vector2
+   * @param {array} a - vector1
+   * @param {array} b - vector2
    *
    * @return {array} - cross product of two vectors
    */
@@ -701,7 +712,7 @@ const traj = (function traj(lander) {
 // ////////////////////
 // RESULTS (MODULE 3)//
 // ////////////////////
-
+// this module transforms results
 // results module works with traj results
 const results = {
   sol: null,
@@ -870,7 +881,6 @@ const results = {
 const livePlots = {
   // altitude vs velocity dataset
   dataset1: {
-  // define initial datasets
     label: 'Altitude vs Velocity',
     data: [{ x: traj.cond.vInf / 1000, y: traj.cond.h / 1000 }],
     backgroundColor: '#5bc8ff', // color of the legend
@@ -912,9 +922,9 @@ const livePlots = {
     showLines: false, // no lines for the plot
     animation: { duration: 0 }, // general animation time
     hover: {
-      mode: 'nearest',
-      intersect: false,
-      animationDuration: 0, // duration of animations when hovering an item
+      mode: 'nearest', // sets which elements appear in the tooltip
+      intersect: false, // if true, the hover mode only applies when the mouse position intersects an item on the chart
+      animationDuration: 0, // duration in milliseconds it takes to animate hover style changes
     },
     responsive: false, // the chart doesnt resize
     // define event functions
@@ -1016,8 +1026,8 @@ const livePlots = {
   },
   init() {
     // get DOM element to place the graph
-    const ctx1 = document.getElementById('plot1');
-    const ctx2 = document.getElementById('plot2');
+    const ctx1 = document.querySelector('#plot1');
+    const ctx2 = document.querySelector('#plot2');
 
     // change the background color of the element
     ctx1.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
@@ -1282,7 +1292,7 @@ const G = (function G() {
     const points = [];
 
     for (let i = 0; i < xLath.length; i++) {
-      points.push(new THREE.Vector2(rLath[i] / scale * landerMagnification, xLath[i] / scale * landerMagnification)); // scale the vehicle by 8
+      points.push(new THREE.Vector2(rLath[i] / scale * landerMagnification, xLath[i] / scale * landerMagnification));
     }
 
     const geometry = new THREE.LatheGeometry(points, rLath.length - 1);
