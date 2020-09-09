@@ -55,6 +55,40 @@ div#instruction button {
   cursor: pointer;
 }
 
+/*style success message for live outputs*/
+div#successMessage {
+  width: 450px;
+  height: 40px;
+  position: fixed;
+  bottom: 20%;
+  left: 50%;
+  margin-top: -250px;
+  margin-left: -250px;
+  
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font: 13px Verdana;
+  border: 2px solid rgb(255, 120, 0);
+  border-radius: 6px;
+  z-index: 10;
+  visibility: hidden; /* hides this element by default */
+}
+
+div#successMessage p {
+  text-align: center;
+}
+
+div#successMessage button {
+  width: 11;
+  position: relative;
+  background-color: rgb(255, 120, 0);
+  color: white;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  align-items: center;
+}
+
 /*style footnote of the simulation*/
 div#footnote {
   width: 200;

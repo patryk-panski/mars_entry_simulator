@@ -34,7 +34,7 @@
     <body>
       <!--TITLE-->
       <header>
-        <h1>Imperial Mars Entry Simulation</h1>    
+        <h1>Mars Entry Simulation</h1>    
       </header>
     
       <main>
@@ -50,7 +50,7 @@
           <li>To save your inputs for later reference use the small menu at the top of the UI.</li>
         </ol>
         <h2>Goal:</h2>
-        <p>Set initial parameters so that the lander can decelerate through the atmosphere until it reaches right conditions to deploy a supersonic parachute.</p>
+        <p>Set initial parameters so that the lander can decelerate through the atmosphere until it reaches the right conditions to deploy a supersonic parachute.</p>
         <ul>
           <li>Altitude: above 8 km</li>
           <li>Mach number: 1.1 - 2.2</li>
@@ -66,31 +66,36 @@
         <p class="small">Dynamic Pressure: <span id="dynamicPress"></span></p>
         <p class="small">Stagnation temperature: <span id="tempNose"></span></p>
       </div>
+      
+      <div id="successMessage">
+        <p>Parachute can be safely deployed at this point! Congratulations! <button>&#10006;</button></p>
+      </div>
 
       <!--SIMULATION-->
       <div id="webgl"></div>
 
-      <!--PLOTS-->
+      <!--LIVE PLOTS-->
       <canvas id="plot1" width="400" height="250"></canvas>
       <canvas id="plot2" width="400" height="250"></canvas>
 
-      <!--PROGRESS BAR-->
-      <div id="progress"></div>
       </main>
       
       <!-- FOOTNOTE -->
       <footer>
-      <div id="footnote"><p> Created by <b>Patryk&nbsp;Szczepanski</b>, MEng Aeronautics Student <button>Help</button> <br/><br/>Based on MATLAB Entry Simulation code by <b>Lisa&nbsp;Peacocke</b> <br/>Created with invaluable support from <b>Dr&nbsp;Matthew&nbsp;Santer</b> and <b>Dr&nbsp;Paul&nbsp;Bruce</b></p></div>
+      <div id="footnote"><p> Created by <b>Patryk&nbsp;Szczepanski</b> <button>Help</button> <br/><br/>Based on MATLAB Entry Simulation code by <b>Lisa&nbsp;Peacocke</b> <br/>Created with invaluable support from <b>Dr&nbsp;Matthew&nbsp;Santer</b> and <b>Dr&nbsp;Paul&nbsp;Bruce</b></p></div>
       </footer>
 
       <script>
-      var instruction = document.querySelector('#instruction');
-      
+      const instruction = document.querySelector('#instruction');
       //when clicked hide the instruction
       document.querySelector('#instruction button').addEventListener('click', () => instruction.style = "display: none;", false);
-      
       //when clicked show the instruction
       document.querySelector('#footnote button').addEventListener('click', () => instruction.style = "", false);
+      
+      const successMessage = document.querySelector("#successMessage");
+      //when clicked hide this message
+      document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style = "visibility: hidden;", false);
+      
       
       //when DOM is loaded run methods from main JS file
       document.addEventListener('DOMContentLoaded', () => { 

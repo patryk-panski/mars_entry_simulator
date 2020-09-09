@@ -1141,69 +1141,89 @@ const livePlots = {
 // LIVE OUTPUTS (MODULE 5)//
 // /////////////////////////
 /**
-* This module defines live outputs on the website
+* This module defines live outputs on the website.
 */
 const liveOutputs = {
+  // grabs DOM elements used to display live outputs
   DOMel: {
     alt: document.querySelector('#altitude'),
     vel: document.querySelector('#velocity'),
     qInf: document.querySelector('#dynamicPress'),
     tempNose: document.querySelector('#tempNose'),
   },
+  // initialize live outputs based on the results from trajectory module
   init() {
-    // initialize live output just after trajectory is calculated
-    this.DOMel.alt.innerHTML = `${Math.round(traj.cond.h)} m`;
-    this.DOMel.vel.innerHTML = `${Math.round(traj.cond.vInf)} m/s`;
+    // defines initial parameters
+    const altitude = Math.round(traj.cond.h);
+    const velocity = Math.round(traj.cond.vInf);
+    const [, , , , , , , , , dynamicPress, mach, , ,] = traj.calcAtmoProperties(altitude, velocity, lander); // eslint-disable-line comma-spacing
+
+    // initializes those values in the live outputs
+    this.DOMel.alt.innerHTML = `${altitude} m`;
+    this.DOMel.vel.innerHTML = `${velocity} m/s`;
     this.DOMel.qInf.innerHTML = '0 Pa';
     this.DOMel.tempNose.innerHTML = '0 K';
-  },
-  update(time, { spline }) {
-    /**
-     * Updates altitude, velocity and dynamic pressure outputs in the render loop.
-     *
-     * @param {number} time - real simulation time
-     * @param {object} spline - splines from result object
-     */
 
-    // change it into results.sol.at(time) and then take values
-    // get current values
+    // check if the current values of those parameters are within limits to safely deploy a parachute
+    this.checkLimits(altitude, mach, dynamicPress);
+  },
+  /**
+  * Updates altitude, velocity and dynamic pressure outputs in the render loop and checks for acceptable limits of those values.
+  *
+  * @param {number} time - real simulation time
+  * @param {object} spline - splines from result object
+  */
+  update(time, { spline }) {
+    // gets current values of parameters
     const altitude = Math.round(spline.tVSalt.at(time));
     const velocity = Math.round(spline.tVSvel.at(time));
     const dynamicPress = Math.round(spline.tVSqInf.at(time) * 100) / 100;
     const tempNose = Math.round(spline.tVStempNose.at(time) * 100) / 100;
     const mach = traj.calcAtmoProperties(altitude, velocity, lander)[10];
 
-    // make changes to DOM elements, update current values
+    // updates values in the DOM elements
     this.DOMel.alt.innerHTML = `${altitude} m`;
     this.DOMel.vel.innerHTML = `${velocity} m/s`;
     this.DOMel.qInf.innerHTML = `${dynamicPress} Pa`;
     this.DOMel.tempNose.innerHTML = `${tempNose} K`;
 
-    // check for the limits of the numbers and colour them accordingly
-    (altitude > 8000) ? this.DOMel.alt.style.color = 'green' : this.DOMel.alt.style.color = 'red';
+    // check if the current values of those parameters are within limits to safely deploy a parachute
+    this.checkLimits(altitude, mach, dynamicPress);
+  },
+  /**
+  * This function checks limits of the current live outputs and colours the font accordingly and displays a message
+  */
+  checkLimits(altitude, mach, dynamicPressure) {
+    // defines limits
+    const altitudeLimit = 8000; // [m]
+    const machMax = 2.2; // [-]
+    const machMin = 1.1; // [-]
+    const dynPressMax = 850; // [Pa]
+    const dynPressMin = 239; // [Pa]
 
-    if (mach < 2.2 && mach > 1.1) {
-      this.DOMel.vel.style.color = 'green';
-    } else {
-      this.DOMel.vel.style.color = 'red';
+    // defines conditions for the values
+    const altCond = altitude > altitudeLimit;
+    const machCond = (mach < machMax && mach > machMin);
+    const dynPressCond = (dynamicPressure < dynPressMax && dynamicPressure > dynPressMin);
+
+    // checks for the limits of the numbers and colours them accordingly
+    altCond ? this.DOMel.alt.style.color = 'green' : this.DOMel.alt.style.color = 'red'; // altitude limits
+    machCond ? this.DOMel.vel.style.color = 'green' : this.DOMel.vel.style.color = 'red'; // mach number limits
+    dynPressCond ? this.DOMel.qInf.style.color = 'green' : this.DOMel.qInf.style.color = 'red'; // dynamic pressure limits
+
+    // grabs success and fail message containers
+    const successMessage = document.querySelector('#successMessage');
+
+    // checks for meeting the right conditions to deploy a parachute
+    if (altCond && machCond && dynPressCond) {
+      successMessage.style.visibility = 'visible'; // display the success message
+
+      G.stopAnim(); // stops animations in the graphics module
+      G.setVelocityVector(traj.cond); // sets velocity vector length in the graphics module
     }
 
-    if (dynamicPress < 850 && dynamicPress > 239) {
-      this.DOMel.qInf.style.color = 'green';
-    } else {
-      this.DOMel.qInf.style.color = 'red';
-    }
-
-
-    // introduce game logic for the update of live outputs
-    if (altitude > 8000 && mach > 1.1 && mach < 2.2 && dynamicPress < 850 && dynamicPress > 239) {
-      alert('Parachute can be safely deployed at this point! Congratulations!');
-      G.stopAnim();
-      G.setVelocityVector(traj.cond);
-    }
-
-    const checkArr = [1.1 - mach, 8000 - altitude, 239 - dynamicPress];
-    if (checkArr.every(el => (el > 0)) || altitude <= 8000 || mach <= 1.1) {
+    // checks for conditions after crossing which one cannot deploy a parachute
+    if (!altCond) {
       alert("You haven't reached the right conditions to safely deploy a parachute. Try again!");
 
       G.stopAnim();
@@ -1211,16 +1231,6 @@ const liveOutputs = {
     }
   },
 };
-
-// ///////////////////////
-// GAME LOGIC (MODULE 6)//
-// ///////////////////////
-
-// const game = (function() {
-//
-// //TODO make a separate module with game logics that is called inside render loop and it accepts current results as arguments
-//
-// })();
 
 // ///////////////////////////////////
 // GRAPHICS AND ANIMATION (MODULE 6)//
@@ -1741,7 +1751,7 @@ function setupGUI() {
   gui.add(lander, 'mass', 10, 50000).name('Mass [kg]');
   // VELOCITY
   const vel = gui.add(cond, 'vInf', 1000, 10000).name('Velocity [m/s]');
-  vel.onChange(() => G.setVelocityVector(cond));
+  vel.onChange(() => { G.setVelocityVector(cond); liveOutputs.init(); });
   // COMx PAYLOAD
   // QUESTION Why is it behaving weirdly for COMx > ~2.6m for the default values?
   // let COMx = gui.add(lander, 'COMx', 0, 3).name('COM x position [m]');
@@ -1810,13 +1820,6 @@ function setupGUI() {
   stop.onFinishChange(() => G.setVelocityVector(cond));
   // pause
   folder.add(G, 'pauseAnim').name('Pause');
-
-  // //HEATSHIELD PROPERTIES
-  // folder = gui.addFolder('HEATSHIELD PROPERTIES');
-  // //density
-  // let hsDensity = folder.add(lander, 'hsDensity', 100, 500).name('Density [kg/m3]');
-  // //thickness
-  // let hsThickness = folder.add(lander, 'hsThickness', 0, 0.2).name('Thickness [m]');
 }
 
 // /////////////////////////
