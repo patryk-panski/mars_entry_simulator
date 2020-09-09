@@ -877,42 +877,50 @@ const results = {
 // ///////////////////////
 // LIVE PLOTS (MODULE 4)//
 // ///////////////////////
-
+/**
+* This module uses Chart.js to define live plots on the website
+*/
 const livePlots = {
-  // altitude vs velocity dataset
-  dataset1: {
-    label: 'Altitude vs Velocity',
-    data: [{ x: traj.cond.vInf / 1000, y: traj.cond.h / 1000 }],
-    backgroundColor: '#5bc8ff', // color of the legend
-    pointRadius: 0.9,
-    pointBackgroundColor: '#5bc8ff',
-    pointHoverRadius: 2,
-    pointHoverBackgroundColor: '#FFF',
-  },
+  // creates an array of colours that are used for consecutive datasets (new plots)
+  colours: ['#d67ad5', '#8481e6', '#81cee6', '#9ae681', '#e6e481', '#e6a381'],
   // minimum altitude line
-  dataset2: {
+  dataset1: {
     label: 'Minimum altitude line',
-    data: [{ x: 0, y: 8 }, { x: traj.cond.vInf / 1000 + 0.5, y: 8 }],
-    borderColor: '#a75964',
+    data: [{ x: 0, y: 8 }, { x: 8, y: 8 }],
+    borderColor: '#db2525',
     borderWidth: 2,
     pointRadius: 0,
     hitRadius: 0,
     pointHoverRadius: 0,
     showLine: true,
   },
-  // AoA vs time
+  // altitude vs velocity
+  dataset2: {
+    colourIndex: 0, // changes before another plot is plotted on top
+    label: 'Altitude vs Velocity',
+    data: [], // initialize to being empty
+    // backgroundColor: '#5bc8ff', // color of the legend
+    pointRadius: 0.9,
+    get pointBackgroundColor() { return livePlots.colours[this.colourIndex]; },
+    pointHoverRadius: 2,
+    pointHoverBackgroundColor: '#FFF',
+  },
+  // angle of attack vs time
   dataset3: {
+    colourIndex: 0, // changes before another plot is plotted on top
     label: 'AoA vs time',
-    data: [{ x: 0, y: traj.cond.alpha * 180 / Math.PI }],
-    backgroundColor: '#5bc8ff', // color of the legend
-    pointRadius: 0.7,
-    pointBackgroundColor: '#5bc8ff',
+    data: [], // initialize to being empty
+    // backgroundColor: '#5bc8ff', // color of the legend
+    pointRadius: 0.8,
+    get pointBackgroundColor() { return livePlots.colours[this.colourIndex]; },
     pointHoverRadius: 1.5,
     pointHoverBackgroundColor: '#FFF',
   },
+  // puts altitude vs velocity and minimum altitude line together
   get data1() {
     return { datasets: [this.dataset1, this.dataset2] };
-  }, // define initial data based on datasets
+  },
+  // initializes data for the AoA vs time plot
   get data2() {
     return { datasets: [this.dataset3] };
   },
@@ -932,11 +940,10 @@ const livePlots = {
       // test if results.arr object is empty
       if (Object.keys(results.arr).length !== 0 && results.arr.constructor === Object) {
         const index = point[0]._index;
-        const altitude = livePlots.dataset1.data[index].y * 1000; // [m] it's monotonous unlike velocity array
-        // To Do make it move to interpolated time
+        const altitude = livePlots.dataset2.data[index].y * 1000; // [m] it's monotonous unlike velocity array
         let time = everpolate.linear(altitude, results.arr.alt, results.arr.t)[0];
         time = Math.round(time * 100) / 100; // round to 2 decimal places
-        G.setTime(time);
+        G.setTime(time); // sets the time of the simulation
       }
     },
     scales: {
@@ -1024,68 +1031,118 @@ const livePlots = {
       borderColor: '#FFF',
     },
   },
+  myPlot1: null,
+  myPlot2: null,
+  /**
+  * Initializes charts in canvas elements
+  */
   init() {
-    // get DOM element to place the graph
+    // gets DOM elements to place the graph
     const ctx1 = document.querySelector('#plot1');
     const ctx2 = document.querySelector('#plot2');
 
-    // change the background color of the element
+    // changes the background color of the element
     ctx1.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
     ctx2.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
 
-    // change default font properties
+    // changes default font colour and family
     Chart.defaults.global.defaultFontColor = '#FFF';
     Chart.defaults.global.defaultFontFamily = 'Verdana';
 
-    // create the graph with predefined data and options
-    this.myPlot1 = new Chart(ctx1, { type: 'scatter', data: this.data1, options: this.options1 });
-    this.myPlot2 = new Chart(ctx2, { type: 'scatter', data: this.data2, options: this.options2 });
+    // creates 2 plots with predefined data and options
+    this.myPlot1 = new Chart(ctx1, { type: 'scatter', data: this.data1, options: this.options1 }); // altitude vs velocity
+    this.myPlot2 = new Chart(ctx2, { type: 'scatter', data: this.data2, options: this.options2 }); // angle of attack vs time
   },
+  /**
+  * Updates data on the plots in the render loop
+  *
+  * @param {number} time - real simulation time
+  * @param {object} spline - splines from result object
+  */
   update(time, { spline }) {
-    /**
-     * Updates data on the plots in the render loop
-     *
-     * @param {number} time - real simulation time
-     * @param {object} spline - splines from result object
-     */
-    // interpolate values in the results arrays to find current values
-    // and round the value
+    // PLOT 1 (altitude vs velocity)
+
+    // interpolates values in the results arrays to find the current values of altitude and velocity
+    // and rounds the values
     const altitude = Math.round(spline.tVSalt.at(time)) / 1000; // [km]
     const velocity = Math.round(spline.tVSvel.at(time)) / 1000; // [km/s]
-    // let dynamicPress = Math.round(spline.tVSqInf.at(time));
 
-    // push new data point
-    // the following code downsamples the data for the plots
-    const previous = this.myPlot1.data.datasets[0].data[this.myPlot1.data.datasets[0].data.length - 1]; // only the last element
-    const distance = Math.sqrt(400 * (velocity - previous.x) * (velocity - previous.x) + (altitude - previous.y) * (altitude - previous.y));
+    const last1 = this.myPlot1.data.datasets.length - 1; // index of the last item in the datasets array
+    if (this.myPlot1.data.datasets[last1].data.length !== 0) { // if the last dataset is not empty
+      const previous1 = this.myPlot1.data.datasets[last1].data[this.myPlot1.data.datasets[last1].data.length - 1]; // defines the last data point
+      const distance1 = Math.sqrt(400 * (velocity - previous1.x) * (velocity - previous1.x) + (altitude - previous1.y) * (altitude - previous1.y)); // defines the distance between the current and last data point
 
-    if (distance > 1) {
-      this.myPlot1.data.datasets[0].data.push({ x: velocity, y: altitude });
-      // this.myPlot1.data.datasets[1].data.push({x: dynamicPress, y: altitude});
-      this.myPlot1.update(0);
+      // based on distance either push to the last dataset or create a new dataset
+      if (distance1 > 1 && distance1 < 50) {
+        this.myPlot1.data.datasets[last1].data.push({ x: velocity, y: altitude }); // push data to the last dataset
+        this.myPlot1.update(0); // triggers an update of the chart. This can be safely called after updating the data object. This will update all scales, legends, and then re-render the chart
+      }
+      if (distance1 > 50) { // this big a distance signifies a new plot
+        const colourIndex = this.myPlot1.data.datasets[last1].colourIndex + 1; // changes the colour of the next plot
+        // initializes new dataset
+        this.myPlot1.data.datasets.push({
+          colourIndex, // changes before another plot is plotted on top
+          label: 'Altitude vs Velocity',
+          data: [],
+          pointRadius: 0.9,
+          get pointBackgroundColor() { return livePlots.colours[this.colourIndex]; },
+          pointHoverRadius: 2,
+          pointHoverBackgroundColor: '#FFF',
+        });
+        this.myPlot1.data.datasets[this.myPlot1.data.datasets.length - 1].data.push({ x: velocity, y: altitude }); // push data to the last dataset
+        this.myPlot1.update(0); // triggers an update of the chart
+      }
+    } else { // if the last dataset is empty
+      this.myPlot1.data.datasets[last1].data.push({ x: velocity, y: altitude }); // push data to the last dataset
+      this.myPlot1.update(0); // triggers an update of the chart
     }
 
-    // interpolate values in the results arrays to find current values
-    // and round the value
+    // PLOT 2 (angle of attack vs time)
+
+    // interpolates values in the results arrays to find the current values of angle of attack and time
+    // and rounds the values
     const t = Math.round(time * 100) / 100; // seconds, round to 2 decimal places
     const AoA = Math.round(spline.tVSAoA.at(time) * 180 / Math.PI * 1000) / 1000; // deg, round to 3 decimal places
 
-    const previous2 = this.myPlot2.data.datasets[0].data[this.myPlot2.data.datasets[0].data.length - 1]; // only the last element
-    const distance2 = Math.sqrt((t - previous2.x) * (t - previous2.x) + (AoA - previous2.y) * (AoA - previous2.y));
+    const last2 = this.myPlot2.data.datasets.length - 1; // index of the last item in the datasets array
+    if (this.myPlot2.data.datasets[last2].data.length !== 0) { // if the last dataset is not empty
+      const previous2 = this.myPlot2.data.datasets[last2].data[this.myPlot2.data.datasets[last2].data.length - 1]; // defines the last data point
+      const distance2 = Math.sqrt((t - previous2.x) * (t - previous2.x) + (AoA - previous2.y) * (AoA - previous2.y)); // defines distance between the current and the last data point
 
-    if (distance2 > 0.5) {
-      this.myPlot2.data.datasets[0].data.push({ x: t, y: AoA });
-      this.myPlot2.update(0);
+      // based on distance either push to the last dataset or create a new dataset
+      if (distance2 > 0.2 && distance2 < 50) {
+        this.myPlot2.data.datasets[last2].data.push({ x: t, y: AoA });
+        this.myPlot2.update(0);
+      }
+
+      if (distance2 > 50) { // this big a distance signifies a new plot
+        const colourIndex = this.myPlot2.data.datasets[last2].colourIndex + 1; // changes the colour of the next plot
+        // initializes new dataset
+        this.myPlot2.data.datasets.push({
+          colourIndex, // changes before another plot is plotted on top
+          label: 'AoA vs time',
+          data: [{ x: 0, y: traj.cond.alpha * 180 / Math.PI }],
+          pointRadius: 0.8,
+          get pointBackgroundColor() { return livePlots.colours[this.colourIndex]; },
+          pointHoverRadius: 1.5,
+          pointHoverBackgroundColor: '#FFF',
+        });
+        this.myPlot2.data.datasets[this.myPlot2.data.datasets.length - 1].data.push({ x: t, y: AoA }); // push data to the last dataset
+        this.myPlot2.update(0); // triggers an update of the chart
+      }
+    } else { // if the last dataset is empty
+      this.myPlot2.data.datasets[last2].data.push({ x: t, y: AoA }); // push data to the last dataset
+      this.myPlot2.update(0); // triggers an update of the chart
     }
   },
-  myPlot1: null,
-  myPlot2: null,
 };
 
 // /////////////////////////
 // LIVE OUTPUTS (MODULE 5)//
 // /////////////////////////
-
+/**
+* This module defines live outputs on the website
+*/
 const liveOutputs = {
   DOMel: {
     alt: document.querySelector('#altitude'),
