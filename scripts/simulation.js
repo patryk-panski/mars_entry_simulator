@@ -1192,6 +1192,9 @@ const liveOutputs = {
   },
   /**
   * This function checks limits of the current live outputs and colours the font accordingly and displays a message
+  * @param {number} altitude - current altitude
+  * @param {number} mach - current Mach number
+  * @param {number} dynamicPressure - current dynamic pressure
   */
   checkLimits(altitude, mach, dynamicPressure) {
     // defines limits
@@ -1727,9 +1730,10 @@ const G = (function G() {
   };
 })();
 
-// ///////////////////
-// ///////////////////////////////CONTROLLER/////////////////////////////
-// ///////////////////
+// /////////////////////////////////////
+// GRAPHICAL USER INTERFACE (MODULE 7)//
+// /////////////////////////////////////
+
 
 /**
  * Creates GUI with initial parameters.
@@ -1738,31 +1742,27 @@ const G = (function G() {
  * @param {object} traj - contains atmosphere data
  */
 function setupGUI() {
-  // initialize GUI and set its width
-  const gui = new dat.GUI({ width: 300 }); // specify width of gui
+  // initializes GUI and sets its width
+  const gui = new dat.GUI({ width: 400 }); // specify width of gui
 
   const { cond } = traj; // contains initial conditions
 
-  // add save menu
+  // add save menu, remember the initial state of objects before we implement any changes
   gui.remember(lander);
   gui.remember(cond);
 
-
-  // MASS
+  // MASS of the heatshield
   gui.add(lander, 'mass', 10, 50000).name('Mass [kg]');
-  // VELOCITY
+  // VELOCITY of the heatshield
   const vel = gui.add(cond, 'vInf', 1000, 10000).name('Velocity [m/s]');
   vel.onChange(() => { G.setVelocityVector(cond); liveOutputs.init(); });
-  // COMx PAYLOAD
-  // QUESTION Why is it behaving weirdly for COMx > ~2.6m for the default values?
-  // let COMx = gui.add(lander, 'COMx', 0, 3).name('COM x position [m]');
 
-  // GEOMETRY
+  // GEOMETRY of the heatshield
   let folder = gui.addFolder('GEOMETRY');
-  // number of divisions
+  // number of mesh divisions
   const nop = folder.add(lander.mesh, 'nop', 10, 50).step(1).name('Mesh Divisions');
   nop.onChange(() => { lander.defineMesh(); G.setLander(lander, cond); });
-  // diameter
+  // diameter of the heatshield
   const dia = folder.add(lander, 'diameter', 1, 30).name('Diameter [m]');
   dia.onChange(() => { lander.defineMesh(); G.setLander(lander, cond); });
   // nose radius
@@ -1771,9 +1771,6 @@ function setupGUI() {
   // angle
   const theta = folder.add(lander, 'sphereConeAngleDeg', 10, 80).name('Cone Angle [deg]');
   theta.onChange(() => { lander.defineMesh(); G.setLander(lander, cond); });
-
-  // wireframe toggle
-  // let wireframe = gui.add(scene.getObjectByName('MESH').material,'wireframe')
 
   // POSITION
   folder = gui.addFolder('POSITION');
@@ -1798,17 +1795,13 @@ function setupGUI() {
   // angle of attack
   const AoA = folder.add(cond, 'alphaDeg', -80, 80).name('Angle of Attack [deg]');
   AoA.onChange(() => G.setBODYRotation(cond));
-  // angle of sideslip
-  // let side = folder.add(cond, 'betaDeg', -90, 90).name('Sideslip Angle [deg]');
-  // side.onChange(() => G.setBODYRotation(cond));
 
   // ATMOSPHERES
   gui.add(traj, 'current', { Pathfinder: 'pathfinder', Curiosity: 'curiosity', Opportunity: 'opportunity', Phoenix: 'phoenix', Schiaparelli: 'schiaparelli', Spirit: 'spirit' }).name('Atmosphere');
 
   // TRAJECTORY function - save function
-  const save = gui.add(results, 'run').name('GET TRAJECTORY');
+  const save = gui.add(results, 'run').name('CALCULATE');
   save.onFinishChange(() => { liveOutputs.init(); G.defineAnim(results); });
-
 
   // create folder for animation
   folder = gui.addFolder('ANIMATION');
@@ -1822,6 +1815,10 @@ function setupGUI() {
   // pause
   folder.add(G, 'pauseAnim').name('Pause');
 }
+
+// /////////////////////////
+// LOGIC
+// /////////////////////////
 
 // /////////////////////////
 // ////////////////////////END * OF * THE * SCRIPT///////////////////////////////////
