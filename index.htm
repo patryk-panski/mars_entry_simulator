@@ -70,6 +70,10 @@
       <div id="successMessage">
         <p>Parachute can be safely deployed at this point! Congratulations! <button>&#10006;</button></p>
       </div>
+      
+      <div id="failureMessage">
+        <p>You haven't reached the right conditions to safely deploy a parachute. Try again! <button>&#10006;</button></p>
+      </div>
 
       <!--SIMULATION-->
       <div id="webgl"></div>
@@ -93,9 +97,10 @@
       document.querySelector('#footnote button').addEventListener('click', () => instruction.style = "", false);
       
       const successMessage = document.querySelector("#successMessage");
+      const failureMessage = document.querySelector("#failureMessage");
       //when clicked hide this message
       document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style = "visibility: hidden;", false);
-      
+      document.querySelector("#failureMessage button").addEventListener("click", () => failureMessage.style = "visibility: hidden;", false);
       
       //when DOM is loaded run methods from main JS file
       document.addEventListener('DOMContentLoaded', () => { 

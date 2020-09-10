@@ -1213,6 +1213,7 @@ const liveOutputs = {
 
     // grabs success and fail message containers
     const successMessage = document.querySelector('#successMessage');
+    const failureMessage = document.querySelector('#failureMessage');
 
     // checks for meeting the right conditions to deploy a parachute
     if (altCond && machCond && dynPressCond) {
@@ -1224,10 +1225,10 @@ const liveOutputs = {
 
     // checks for conditions after crossing which one cannot deploy a parachute
     if (!altCond) {
-      alert("You haven't reached the right conditions to safely deploy a parachute. Try again!");
+      failureMessage.style.visibility = 'visible'; // display the failure message
 
-      G.stopAnim();
-      G.setVelocityVector(traj.cond);
+      G.stopAnim(); // stops animations in the graphics module
+      G.setVelocityVector(traj.cond); // sets velocity vector length in the graphics module
     }
   },
 };
