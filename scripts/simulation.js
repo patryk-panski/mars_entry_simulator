@@ -1260,10 +1260,36 @@ const G = (function () {
   const clock = new THREE.Clock();
   const stats = new Stats();
   const manager = new THREE.LoadingManager();
+  const progressBarElem = document.querySelector('#loading .progressbar'); // grab a progress bar element from DOM
+  manager.onProgress = (urlOfLastItemLoaded, itemsLoaded, itemsTotal) => { // define loading progress behaviour
+    const progress = itemsLoaded / itemsTotal;
+    progressBarElem.style.transform = `scaleX(${progress})`;
+  };
+
+
   const controls = new THREE.TrackballControls(camera, renderer.domElement);
+  const materials = loadTextures(); // create materials with textures for mars object
 
   let mixer; let clipAction; let isPlay = false;
 
+  /**
+   * Loads Mars surface images using THREE.js Texture Loader
+   *
+   */
+  function loadTextures() {
+    const loader = new THREE.TextureLoader(manager); // loader for textures
+
+    return [
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars0.png') }),
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars1.png') }),
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars2.png') }),
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars3.png') }),
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars4.png') }),
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars5.png') }),
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars6.png') }),
+      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars7.png') }),
+    ];
+  }
   /**
    * Initializes the scene with all objects.
    *
@@ -1317,7 +1343,7 @@ const G = (function () {
   * @return {object} - THREE.js object3D representing Mars
   */
   function createMars(lander, Mars, manager) {
-    // get scale and radius
+    // get scale and radius of the Mars
     const { scale } = lander.mesh;
     const radius = Mars.r / scale;
 
@@ -1326,13 +1352,11 @@ const G = (function () {
 
     // create all 8 sphere parts
     const mars = new THREE.Group(); // container for all sphere parts
-    let texture; let material; let geometry; let mesh;
-    const loader = new THREE.TextureLoader(manager); // loader for textures
+    let material; let geometry; let mesh;
 
     for (let i = 0; i < 8; i++) {
       geometry = new THREE.SphereGeometry(radius, 64, 64, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
-      texture = loader.load(`images/color/mars${i}.png`);
-      material = new THREE.MeshBasicMaterial({ map: texture });
+      material = materials[i];
       mesh = new THREE.Mesh(geometry, material);
       mars.add(mesh);
     }
@@ -1517,9 +1541,9 @@ const G = (function () {
   * @return {object} THREE.js group object representing FoR.
   */
   function createFrame(name, axesLength) {
-    const frame = new THREE.Group();
-    frame.name = name;
-    frame.add(new THREE.AxisHelper(axesLength));
+    const frame = new THREE.Group(); // create a new group for the frame
+    frame.name = name; // assign a name to the group
+    frame.add(new THREE.AxisHelper(axesLength)); // create axes
 
     return frame;
   }

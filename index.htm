@@ -33,13 +33,13 @@
     </head>
     <body>
       <!--TITLE-->
-      <header>
+      <header class="loaded">
         <h1>Mars Entry Simulation</h1>    
       </header>
     
       <main>
       <!-- INSTRUCTION -->
-      <div id="instruction">
+      <div class="loaded" id="instruction">
         <h2>Instructions:</h2>
         <ol>
           <li>Change the initial parameters using the user interface on the right.</li>
@@ -60,7 +60,7 @@
       </div>
 
       <!--ALTITUDE AND VELOCITY OUTPUTS-->
-      <div id="outputs1">
+      <div class="loaded" id="outputs1">
         <p>Altitude: <span id="altitude"></span></p>
         <p>Velocity: <span id="velocity"></span></p>
         <p class="small">Dynamic Pressure: <span id="dynamicPress"></span></p>
@@ -79,38 +79,48 @@
       <div id="webgl"></div>
 
       <!--LIVE PLOTS-->
-      <canvas id="plot1" width="400" height="250"></canvas>
-      <canvas id="plot2" width="400" height="250"></canvas>
+      <canvas class="loaded" id="plot1" width="400" height="250"></canvas>
+      <canvas class="loaded" id="plot2" width="400" height="250"></canvas>
+      
+      <!-- PROGRESS BAR -->
+      <div id="loading">
+        <div class="progress"><div class="progressbar"></div></div>
+      </div>
 
       </main>
       
       <!-- FOOTNOTE -->
-      <footer>
+      <footer class="loaded">
       <div id="footnote"><p> Created by <b>Patryk&nbsp;Szczepanski</b> <button>Help</button> <br/><br/>Based on MATLAB Entry Simulation code by <b>Lisa&nbsp;Peacocke</b> <br/>Created with invaluable support from <b>Dr&nbsp;Matthew&nbsp;Santer</b> and <b>Dr&nbsp;Paul&nbsp;Bruce</b></p></div>
       </footer>
 
       <script>
-      const instruction = document.querySelector('#instruction');
-      //when clicked hide the instruction
-      document.querySelector('#instruction button').addEventListener('click', () => instruction.style = "display: none;", false);
-      //when clicked show the instruction
-      document.querySelector('#footnote button').addEventListener('click', () => instruction.style = "", false);
+      // defines instruction element behaviour
+      const instruction = document.querySelector('#instruction'); // grab an instruction element
+      document.querySelector('#instruction button').addEventListener('click', () => instruction.style.visibility = "hidden", false); // when clicked hide the instruction
+      document.querySelector('#footnote button').addEventListener('click', () => instruction.style.visibility = "visible", false); // when clicked show the instruction
       
+      // defines success and failure messages behaviour
       const successMessage = document.querySelector("#successMessage");
       const failureMessage = document.querySelector("#failureMessage");
-      //when clicked hide this message
-      document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style = "visibility: hidden;", false);
-      document.querySelector("#failureMessage button").addEventListener("click", () => failureMessage.style = "visibility: hidden;", false);
+      document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style.visibility = "hidden", false); // when clicked hide success message
+      document.querySelector("#failureMessage button").addEventListener("click", () => failureMessage.style.visibility = "hidden", false); // when clicked hide failure message
       
-      //when DOM is loaded run methods from main JS file
+      // when DOM is loaded run methods from main JS file
       document.addEventListener('DOMContentLoaded', () => { 
         lander.defineMesh(); //(MODEL)
         livePlots.init(); //(VIEW)
         liveOutputs.init(); //(VIEW)
-        G.initScene(); //(VIEW)
-        //G.manager.onLoad = function() {//display the simulation after Mars textures have been loaded
-        setupGUI(); //(CONTROLLER)
-        G.render(); //(VIEW)
+        
+        //display the simulation after Mars textures have been loaded
+        G.manager.onLoad = () => {
+          document.querySelector('#loading').style.display = 'none'; // hide the progress bar
+          document.querySelectorAll('.loaded').forEach(el => el.style.visibility = 'visible'); // show all relevant elements 
+          G.initScene(); //(VIEW)
+          G.render(); //(VIEW)
+          setupGUI(); //(CONTROLLER)
+        }
+        
         // };
       }, false);
 

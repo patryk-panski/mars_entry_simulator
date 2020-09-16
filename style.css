@@ -193,3 +193,32 @@ canvas#plot2 {
   border: 4px solid black;
   border-radius: 0px 15px 15px 0px;
 }
+
+/* style progress bar */
+#loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+}
+#loading .progress {
+    margin: 1.5em;
+    border: 1px solid black;
+    width: 50vw;
+}
+#loading .progressbar {
+    margin: 2px;
+    background: black;
+    height: 1em;
+    transform-origin: top left;
+    transform: scaleX(0);
+}
+
+.loaded {
+    visibility: hidden; /* hides this element by default */
+}
