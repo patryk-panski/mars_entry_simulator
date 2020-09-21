@@ -88,6 +88,7 @@ div#successMessage button {
   cursor: pointer;
   align-items: center;
 }
+
 /*style failure message for the live outputs */
 div#failureMessage {
   width: 600px;
@@ -112,6 +113,40 @@ div#failureMessage p {
 }
 
 div#failureMessage button {
+  width: 11;
+  position: relative;
+  background-color: rgb(255, 120, 0);
+  color: white;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  align-items: center;
+}
+
+/*style trajectory calculated notification for the live outputs */
+div#trajCalculated {
+  width: 250px;
+  height: 40px;
+  position: fixed;
+  bottom: 20%;
+  left: 60%;
+  margin-top: -250px;
+  margin-left: -250px;
+  
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font: 13px Verdana;
+  border: 2px solid rgb(255, 120, 0);
+  border-radius: 6px;
+  z-index: 10;
+  visibility: hidden; /* hides this element by default */
+}
+
+div#trajCalculated p {
+  text-align: center;
+}
+
+div#trajCalculated button {
   width: 11;
   position: relative;
   background-color: rgb(255, 120, 0);

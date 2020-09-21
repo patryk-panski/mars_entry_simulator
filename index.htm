@@ -74,6 +74,10 @@
       <div id="failureMessage">
         <p>You haven't reached the right conditions to safely deploy a parachute. Try again! <button>&#10006;</button></p>
       </div>
+      
+      <div id="trajCalculated">
+        <p>Trajectory has been calculated! <button>&#10006;</button></p>
+      </div>
 
       <!--SIMULATION-->
       <div id="webgl"></div>
@@ -103,8 +107,10 @@
       // defines success and failure messages behaviour
       const successMessage = document.querySelector("#successMessage");
       const failureMessage = document.querySelector("#failureMessage");
+      const trajCalculated = document.querySelector("#trajCalculated");
       document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style.visibility = "hidden", false); // when clicked hide success message
       document.querySelector("#failureMessage button").addEventListener("click", () => failureMessage.style.visibility = "hidden", false); // when clicked hide failure message
+      document.querySelector("#trajCalculated button").addEventListener("click", () => trajCalculated.style.visibility = "hidden", false); // when clicked hide the notification about calculated trajectory
       
       // when DOM is loaded run methods from main JS file
       document.addEventListener('DOMContentLoaded', () => { 

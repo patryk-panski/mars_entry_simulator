@@ -717,8 +717,8 @@ const traj = (function (lander) {
 // a format that THREE.js can use. Create splines that are used for interpolation.
 const results = {
   sol: null, // raw solution from trajectory module
-  arr: {},
-  spline: {},
+  arr: {}, // arrays used by the animation system (THREE.js)
+  spline: {}, // spline objects for interpolation
   /**
   * Gets the initial results from the traj object.
   */
@@ -732,15 +732,16 @@ const results = {
   run() {
     this.calc();
 
-    // transform the results into arrays used by animation system (THREE.js)
+    // transform the results into arrays used by the animation system (THREE.js)
     const { scale } = lander.mesh;
     this.createArrays(this.sol, this.arr, scale);
 
     // create spline objects for interpolation
     this.createSplines(this.arr, this.spline);
 
-    // display notification (TODO)
-    alert('Trajectory has been calculated!');
+    // display notification
+    const trajCalculated = document.querySelector('#trajCalculated');
+    trajCalculated.style.visibility = 'visible';
   },
   /**
   * Transforms initial sol object from ODE solver into separate arrays.
@@ -1716,8 +1717,8 @@ const G = (function () {
    * Calls requestAnimationFrame in a loop and renders the scene.
    */
   function render() {
-    window.requestAnimationFrame(render);
     updateView();
+    window.requestAnimationFrame(render);
   }
 
   /**
