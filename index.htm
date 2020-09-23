@@ -13,18 +13,19 @@
       <link rel="stylesheet" href="style.css" />
 
       <!--Libraries-->
+      <!-- maths libraries -->
       <script src="scripts/lib/numeric-1.2.6.min.js"></script>
       <script src="scripts/lib/everpolate.browserified.min.js"></script>
-
+      <!-- plots libraries -->
       <script src="scripts/lib/Chart.min.js"></script>
-
+      <!-- graphics libraries -->
       <script src="scripts/lib/three.min.js"></script>
       <script src="scripts/lib/TrackballControls.js"></script>
       <script src="scripts/lib/Stats.js"></script>
       <script src="scripts/lib/THREEx.WindowResize.js"></script>
       <script src="scripts/lib/THREEx.FullScreen.js"></script>
       <script src="scripts/lib/THREEx.KeyboardState.js"></script>
-
+      <!-- controls libraries -->
       <script src="scripts/lib/dat.GUI.min.js"></script>
 
       <!--SIMULATION SCRIPT-->
@@ -40,17 +41,17 @@
       <main>
       <!-- INSTRUCTION -->
       <div class="loaded" id="instruction">
-        <h2>Instructions:</h2>
+        <h2>Instructions</h2>
         <ol>
-          <li>Change the initial parameters using the user interface on the right.</li>
-          <li>Press the CALCULATE button to calculate trajectory for your inputs and wait until the process is done.</li>
-          <li>Now you can control animation with the buttons in the ANIMATION folder.</li>
-          <li>You can watch live outputs of trajectory data on the left.</li>
-          <li>Press any data point on the first plot to replay the simulation from that moment.</li>
-          <li>To save your inputs for later reference use the small menu at the top of the UI.</li>
+          <li>Change initial parameters using the user interface on the right.</li>
+          <li>Press the CALCULATE button to calculate trajectory for specified inputs. It may take a while!</li>
+          <li>Once trajectory is calculated, control the simulation with the user interface.</li>
+          <li>Watch the live outputs of trajectory data on the left.</li>
+          <li>Press any data point on the first plot to shift the simulation to that moment.</li>
+          <li>Save your inputs for later reference using the small menu at the top of the UI.</li>
         </ol>
-        <h2>Goal:</h2>
-        <p>Set initial parameters so that the lander can decelerate through the atmosphere until it reaches the right conditions to deploy a supersonic parachute.</p>
+        <h2>&#10024; Goal &#10024;</h2>
+        <p>Set initial parameters so that the lander can decelerate through the atmosphere until it reaches the right conditions to deploy a supersonic parachute. Those conditions are following:</p>
         <ul>
           <li>Altitude: above 8 km</li>
           <li>Mach number: 1.1 - 2.2</li>
@@ -58,15 +59,23 @@
         </ul>
           <button>Close</button>
       </div>
-
-      <!--ALTITUDE AND VELOCITY OUTPUTS-->
-      <div class="loaded" id="outputs1">
-        <p>Altitude: <span id="altitude"></span></p>
-        <p>Velocity: <span id="velocity"></span></p>
-        <p class="small">Dynamic Pressure: <span id="dynamicPress"></span></p>
-        <p class="small">Stagnation temperature: <span id="tempNose"></span></p>
-      </div>
       
+      <section id="outputs">
+        <!--ALTITUDE AND VELOCITY OUTPUTS-->
+        <div class="loaded" id="livedata">
+          <p>Altitude: <span id="altitude"></span></p>
+          <p>Velocity: <span id="velocity"></span></p>
+          <p>Dynamic Pressure: <span id="dynamicPress"></span></p>
+          <p>Stagnation Temperature: <span id="tempNose"></span></p>
+        </div>
+        <!--LIVE PLOTS-->
+        <div id="plots">
+          <canvas class="loaded" id="plot1" width="400" height="250"></canvas>
+          <canvas class="loaded" id="plot2" width="400" height="250"></canvas>
+        </div>
+      </section>
+      
+      <!-- MESSAGES -->
       <div id="successMessage">
         <p>Parachute can be safely deployed at this point! Congratulations! <button>&#10006;</button></p>
       </div>
@@ -82,54 +91,52 @@
       <!--SIMULATION-->
       <div id="webgl"></div>
 
-      <!--LIVE PLOTS-->
-      <canvas class="loaded" id="plot1" width="400" height="250"></canvas>
-      <canvas class="loaded" id="plot2" width="400" height="250"></canvas>
-      
       <!-- PROGRESS BAR -->
       <div id="loading">
-        <div class="progress"><div class="progressbar"></div></div>
+        <div>
+          <p>Loading &#128640;</p>
+          <div class="progress">
+            <div class="progressbar"></div>
+          </div>
+        </div>
       </div>
 
       </main>
       
       <!-- FOOTNOTE -->
       <footer class="loaded">
-      <div id="footnote"><p> Created by <b>Patryk&nbsp;Szczepanski</b> <button>Help</button> <br/><br/>Based on MATLAB Entry Simulation code by <b>Lisa&nbsp;Peacocke</b> <br/>Created with invaluable support from <b>Dr&nbsp;Matthew&nbsp;Santer</b> and <b>Dr&nbsp;Paul&nbsp;Bruce</b></p></div>
+      <div id="footnote"><p> Created by <b>Patryk&nbsp;Szczepanski</b>. <button>Help</button> <br/><br/>Based on the MATLAB Entry Simulation code by <b>Lisa&nbsp;Peacocke</b>. <br/>Created with invaluable support from <b>Dr&nbsp;Matthew&nbsp;Santer</b> and <b>Dr&nbsp;Paul&nbsp;Bruce</b> <br/>from Imperial College London.</p></div>
       </footer>
 
       <script>
-      // defines instruction element behaviour
-      const instruction = document.querySelector('#instruction'); // grab an instruction element
-      document.querySelector('#instruction button').addEventListener('click', () => instruction.style.visibility = "hidden", false); // when clicked hide the instruction
-      document.querySelector('#footnote button').addEventListener('click', () => instruction.style.visibility = "visible", false); // when clicked show the instruction
+        // defines instruction element behaviour
+        const instruction = document.querySelector('#instruction'); // grab an instruction element
+        document.querySelector('#instruction button').addEventListener('click', () => instruction.style.visibility = "hidden", false); // when clicked hide the instruction
+        document.querySelector('#footnote button').addEventListener('click', () => instruction.style.visibility = "visible", false); // when clicked show the instruction
       
-      // defines success and failure messages behaviour
-      const successMessage = document.querySelector("#successMessage");
-      const failureMessage = document.querySelector("#failureMessage");
-      const trajCalculated = document.querySelector("#trajCalculated");
-      document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style.visibility = "hidden", false); // when clicked hide success message
-      document.querySelector("#failureMessage button").addEventListener("click", () => failureMessage.style.visibility = "hidden", false); // when clicked hide failure message
-      document.querySelector("#trajCalculated button").addEventListener("click", () => trajCalculated.style.visibility = "hidden", false); // when clicked hide the notification about calculated trajectory
+        // defines success and failure messages behaviour
+        const successMessage = document.querySelector("#successMessage");
+        const failureMessage = document.querySelector("#failureMessage");
+        const trajCalculated = document.querySelector("#trajCalculated");
+        document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style.visibility = "hidden", false); // when clicked hide success message
+        document.querySelector("#failureMessage button").addEventListener("click", () => failureMessage.style.visibility = "hidden", false); // when clicked hide failure message
+        document.querySelector("#trajCalculated button").addEventListener("click", () => trajCalculated.style.visibility = "hidden", false); // when clicked hide the notification about calculated trajectory
       
-      // when DOM is loaded run methods from main JS file
-      document.addEventListener('DOMContentLoaded', () => { 
-        lander.defineMesh(); //(MODEL)
-        livePlots.init(); //(VIEW)
-        liveOutputs.init(); //(VIEW)
+        // when DOM is loaded run methods from main JS file
+        document.addEventListener('DOMContentLoaded', () => { 
+          lander.defineMesh(); //(MODEL)
+          livePlots.init(); //(VIEW)
+          liveOutputs.init(); //(VIEW)
         
-        //display the simulation after Mars textures have been loaded
-        G.manager.onLoad = () => {
-          document.querySelector('#loading').style.display = 'none'; // hide the progress bar
-          document.querySelectorAll('.loaded').forEach(el => el.style.visibility = 'visible'); // show all relevant elements 
-          G.initScene(); //(VIEW)
-          G.render(); //(VIEW)
-          setupGUI(); //(CONTROLLER)
-        }
-        
-        // };
-      }, false);
-
+          //display the simulation after Mars textures have been loaded
+          G.manager.onLoad = () => {
+            document.querySelector('#loading').style.display = 'none'; // hide the progress bar
+            document.querySelectorAll('.loaded').forEach(el => el.style.visibility = 'visible'); // show all relevant elements 
+            G.initScene(); //(VIEW)
+            G.render(); //(VIEW)
+            setupGUI(); //(CONTROLLER)
+          };
+        }, false);
       </script>
     </body>
 </html>

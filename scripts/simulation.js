@@ -1040,13 +1040,10 @@ const livePlots = (function () {
     const ctx1 = document.querySelector('#plot1');
     const ctx2 = document.querySelector('#plot2');
 
-    // changes the background color of the element
-    ctx1.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-    ctx2.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-
-    // changes default font colour and family
+    // changes default font options
     Chart.defaults.global.defaultFontColor = '#FFF';
     Chart.defaults.global.defaultFontFamily = 'Verdana';
+    Chart.defaults.global.defaultFontSize = '13';
 
     // creates 2 plots with predefined data and options
     myPlot1 = new Chart(ctx1, { type: 'scatter', data: data1(), options: options1 }); // altitude vs velocity

@@ -1,38 +1,55 @@
+:root {
+    --color1:black;
+    --color2:white;
+    --color3:rgb(235, 111, 0);
+    --color4:rgb(172, 0, 0);
+    --color5:rgba(0, 0, 0, 0.7);
+}
+
 body {
   margin: 0;
+  font-family: Verdana;
 }
 
 /*style the title of the project*/
 h1 {
-  width: 800px;
-  height: auto;
-
-  position: fixed;
+  position: absolute;
+  /* center a div element */
   left: 50%;
-  margin-left: -400px; /*half of width*/
-
-  color: rgb(255, 120, 0);
-  font: bold 40px Verdana;
-  text-align: center;
+  transform: translateX(-50%);
+  
+  color: var(--color3);
+  font-weight: bold;
+  font-size: 45px;
+  text-shadow: 2px 2px var(--color4);
 }
 
 /*style the instruction window*/
 
 div#instruction {
-  width: 500px;
-  height: 500px;
-  position: fixed;
+  position: absolute;
+  width: 450px;
+  height: 530px;
   top: 50%;
   left: 50%;
-  margin-top: -250px;
-  margin-left: -250px;
+  margin-top: -220px;
+  margin-left: -225px;
+  padding-left: 20px;
+  padding-right: 20px;
 
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--color5);
   color: white;
-  font: 13px Verdana;
-  border: 2px solid rgb(255, 120, 0);
-  border-radius: 6px;
+  font-size: 13px;
+  border-top: 1px solid var(--color3);
+  border-left: 3px solid var(--color3);
+  border-right: 3px solid var(--color3);
+  border-bottom: 1px solid var(--color3);
+  border-radius: 20px;
   z-index: 10;
+}
+
+div#instruction ol, div#instruction ul {
+  padding-inline-start: 30px;
 }
 
 div#instruction > h2 {
@@ -46,113 +63,123 @@ div#instruction li, div#instruction p {
 div#instruction button {
   width: 50px;
   position: relative;
-  background-color: rgb(255, 120, 0);
+  background-color: var(--color4);
   color: white;
   left: 50%;
   margin-left: -25px;
-  border: none;
+  margin-top: 10px;
+  border: 2px solid black;
   text-align: center;
   cursor: pointer;
 }
 
 /*style success message for live outputs*/
 div#successMessage {
-  width: 450px;
-  height: 40px;
-  position: fixed;
-  bottom: 20%;
+  position: absolute;
+
+  bottom: 11%;
   left: 50%;
-  margin-top: -250px;
-  margin-left: -250px;
+  transform: translateX(-50%);
   
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--color5);
   color: white;
-  font: 13px Verdana;
-  border: 2px solid rgb(255, 120, 0);
-  border-radius: 6px;
+  font-size: 16px;
+  border-top: 1px solid var(--color3);
+  border-left: 3px solid var(--color3);
+  border-right: 3px solid var(--color3);
+  border-bottom: 1px solid var(--color3);
+  border-radius: 10px;
   z-index: 10;
   visibility: hidden; /* hides this element by default */
 }
 
 div#successMessage p {
   text-align: center;
+  padding: 0px 17px;
 }
 
 div#successMessage button {
-  width: 11;
-  position: relative;
-  background-color: rgb(255, 120, 0);
+  float: right;
+  margin-left: 5px;
+  padding: 1px 6px;
+  background-color: var(--color4);
   color: white;
   border: none;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   align-items: center;
 }
 
 /*style failure message for the live outputs */
 div#failureMessage {
-  width: 600px;
-  height: 40px;
-  position: fixed;
-  bottom: 20%;
-  left: 50%;
-  margin-top: -250px;
-  margin-left: -250px;
+  position: absolute;
   
-  background: rgba(0, 0, 0, 0.7);
+  bottom: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  background: var(--color5);
   color: white;
-  font: 13px Verdana;
-  border: 2px solid rgb(255, 120, 0);
-  border-radius: 6px;
+  font-size: 16px;
+  border-top: 1px solid var(--color3);
+  border-left: 3px solid var(--color3);
+  border-right: 3px solid var(--color3);
+  border-bottom: 1px solid var(--color3);
+  border-radius: 10px;
   z-index: 10;
   visibility: hidden; /* hides this element by default */
 }
 
 div#failureMessage p {
   text-align: center;
+  padding: 0px 17px;
 }
 
 div#failureMessage button {
-  width: 11;
-  position: relative;
-  background-color: rgb(255, 120, 0);
+  float: right;
+  margin-left: 5px;
+  padding: 1px 6px;
+  background-color: var(--color4);
   color: white;
   border: none;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   align-items: center;
 }
 
 /*style trajectory calculated notification for the live outputs */
 div#trajCalculated {
-  width: 250px;
-  height: 40px;
-  position: fixed;
-  bottom: 20%;
-  left: 60%;
-  margin-top: -250px;
-  margin-left: -250px;
+  position: absolute;
   
-  background: rgba(0, 0, 0, 0.7);
+  bottom: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  background: var(--color5);
   color: white;
-  font: 13px Verdana;
-  border: 2px solid rgb(255, 120, 0);
-  border-radius: 6px;
+  font-size: 16px;
+  border-top: 1px solid var(--color3);
+  border-left: 3px solid var(--color3);
+  border-right: 3px solid var(--color3);
+  border-bottom: 1px solid var(--color3);
+  border-radius: 10px;
   z-index: 10;
   visibility: hidden; /* hides this element by default */
 }
 
 div#trajCalculated p {
   text-align: center;
+  padding: 0px 17px;
 }
 
 div#trajCalculated button {
-  width: 11;
-  position: relative;
-  background-color: rgb(255, 120, 0);
+  float: right;
+  margin-left: 5px;
+  padding: 1px 6px;
+  background-color: var(--color4);
   color: white;
   border: none;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   align-items: center;
 }
@@ -163,16 +190,17 @@ div#footnote {
   position: fixed;
   bottom: 0%;
   right: 0%;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--color5);
   padding: 5px 5px 5px 5px;
-  border-left: 3px solid rgb(255, 120, 0);
-  border-radius: 5px;
+  border-top: 1px solid var(--color3);
+  border-left: 3px solid var(--color3);
+  border-radius: 10px 0 0 10px;
 }
 
 div#footnote > p {
   margin: auto;
   color: white;
-  font: 10px Verdana;
+  font-size: 10px;
 }
 
 div#footnote button {
@@ -180,52 +208,53 @@ div#footnote button {
   position: relative;
   top: 3px;
   right: 3px;
-  background-color: rgb(255, 120, 0);
+  background-color: var(--color4);
   color: white;
   border: none;
-  font-size: 10px;
+  font-size: 13px;
   cursor: pointer;
 }
 
-/*style div with the altitude and velocity outputs*/
-div#outputs1 {
-  height: 150px;
-  width: 200px;
+/* LEFT PANE: live data + live plots */
+section#outputs {
   position: fixed;
-  top: 47px;
-  left: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  border: 4px solid black;
+  top: 48px;
+}
+/*style div with the altitude and velocity outputs*/
+div#livedata {
+  width: 250px;
+  position: relative;
+  background-color: var(--color5);
+  border-top: 1px solid var(--color3);
+  border-right: 3px solid var(--color3);
   border-radius: 0px 15px 15px 0px;
+  margin: 0px;
+  padding: 10px 2px 10px 10px;
 }
 
-div#outputs1 p {
-  margin: 10% 0 10% 5%;
+div#livedata p {
+  margin: 0.1em 0;
   color: white;
-  font: 13px Verdana;
+  font-size: 13px;
+  padding: 2px 0px;
 }
-
-div#outputs1 p.small {
-  font: 10px Verdana;
-}
-
 /*style plots area*/
 canvas#plot1 {
-  position: fixed;
-  top: 28.5%;
-  left: 0;
-  background: white;
-  border: 4px solid black;
+  position: relative;
+  background-color: var(--color5);
+  border-top: 1px solid var(--color3);
+  border-right: 3px solid var(--color3);
   border-radius: 0px 15px 15px 0px;
   cursor: pointer;
+  margin: 0px;
 }
 
 canvas#plot2 {
-  position: fixed;
-  top: 64%;
-  left: 0;
-  background: white;
-  border: 4px solid black;
+  position: relative;
+  background-color: var(--color5);
+  border-top: 1px solid var(--color3);
+  border-right: 3px solid var(--color3);
+  border-bottom: 1px solid var(--color3);
   border-radius: 0px 15px 15px 0px;
 }
 
@@ -240,15 +269,26 @@ canvas#plot2 {
     justify-content: center;
     align-items: center;
     z-index: 20;
+    background-color: var(--color1);
+    color: var(--color2);
 }
+
+#loading p {
+    font-size: 16;
+    position: relative;
+    left: 43%;
+    margin: 0px;
+}
+
 #loading .progress {
-    margin: 1.5em;
-    border: 1px solid black;
+    margin: 5px;
+    border: 2px solid var(--color2);
     width: 50vw;
 }
+
 #loading .progressbar {
     margin: 2px;
-    background: black;
+    background: var(--color3);
     height: 1em;
     transform-origin: top left;
     transform: scaleX(0);
