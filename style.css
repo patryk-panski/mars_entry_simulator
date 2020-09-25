@@ -1,14 +1,15 @@
 :root {
     --color1:black;
     --color2:white;
-    --color3:rgb(235, 111, 0);
-    --color4:rgb(172, 0, 0);
+    --color3:TOMATO; /*rgb(235, 111, 0)*/
+    --color4:FIREBRICK;
     --color5:rgba(0, 0, 0, 0.7);
 }
 
 body {
   margin: 0;
   font-family: Verdana;
+  color: var(--color2);
 }
 
 /*style the title of the project*/
@@ -25,7 +26,6 @@ h1 {
 }
 
 /*style the instruction window*/
-
 div#instruction {
   position: absolute;
   width: 450px;
@@ -38,7 +38,6 @@ div#instruction {
   padding-right: 20px;
 
   background: var(--color5);
-  color: white;
   font-size: 13px;
   border-top: 1px solid var(--color3);
   border-left: 3px solid var(--color3);
@@ -64,7 +63,7 @@ div#instruction button {
   width: 50px;
   position: relative;
   background-color: var(--color4);
-  color: white;
+  color: var(--color2);
   left: 50%;
   margin-left: -25px;
   margin-top: 10px;
@@ -73,8 +72,8 @@ div#instruction button {
   cursor: pointer;
 }
 
-/*style success message for live outputs*/
-div#successMessage {
+/*style the success and failure messages as well as the notification for the successful calculation of the results*/
+div#successMessage, div#failureMessage, div#trajCalculated {
   position: absolute;
 
   bottom: 11%;
@@ -82,7 +81,6 @@ div#successMessage {
   transform: translateX(-50%);
   
   background: var(--color5);
-  color: white;
   font-size: 16px;
   border-top: 1px solid var(--color3);
   border-left: 3px solid var(--color3);
@@ -93,105 +91,31 @@ div#successMessage {
   visibility: hidden; /* hides this element by default */
 }
 
-div#successMessage p {
+div#successMessage p, div#failureMessage p, div#trajCalculated p {
   text-align: center;
   padding: 0px 17px;
 }
 
-div#successMessage button {
+div#successMessage button, div#failureMessage button, div#trajCalculated button {
   float: right;
   margin-left: 5px;
   padding: 1px 6px;
   background-color: var(--color4);
-  color: white;
+  color: var(--color2);
   border: none;
   font-size: 15px;
   cursor: pointer;
   align-items: center;
 }
 
-/*style failure message for the live outputs */
-div#failureMessage {
-  position: absolute;
-  
-  bottom: 11%;
-  left: 50%;
-  transform: translateX(-50%);
-  
-  background: var(--color5);
-  color: white;
-  font-size: 16px;
-  border-top: 1px solid var(--color3);
-  border-left: 3px solid var(--color3);
-  border-right: 3px solid var(--color3);
-  border-bottom: 1px solid var(--color3);
-  border-radius: 10px;
-  z-index: 10;
-  visibility: hidden; /* hides this element by default */
-}
-
-div#failureMessage p {
-  text-align: center;
-  padding: 0px 17px;
-}
-
-div#failureMessage button {
-  float: right;
-  margin-left: 5px;
-  padding: 1px 6px;
-  background-color: var(--color4);
-  color: white;
-  border: none;
-  font-size: 15px;
-  cursor: pointer;
-  align-items: center;
-}
-
-/*style trajectory calculated notification for the live outputs */
-div#trajCalculated {
-  position: absolute;
-  
-  bottom: 11%;
-  left: 50%;
-  transform: translateX(-50%);
-  
-  background: var(--color5);
-  color: white;
-  font-size: 16px;
-  border-top: 1px solid var(--color3);
-  border-left: 3px solid var(--color3);
-  border-right: 3px solid var(--color3);
-  border-bottom: 1px solid var(--color3);
-  border-radius: 10px;
-  z-index: 10;
-  visibility: hidden; /* hides this element by default */
-}
-
-div#trajCalculated p {
-  text-align: center;
-  padding: 0px 17px;
-}
-
-div#trajCalculated button {
-  float: right;
-  margin-left: 5px;
-  padding: 1px 6px;
-  background-color: var(--color4);
-  color: white;
-  border: none;
-  font-size: 15px;
-  cursor: pointer;
-  align-items: center;
-}
-
-/*style footnote of the simulation*/
+/*style the footnote of the simulation*/
 div#footnote {
-  width: 200;
   position: fixed;
+  width: 200;
   bottom: 0%;
   right: 0%;
   background: var(--color5);
-  padding: 5px 5px 5px 5px;
+  padding: 7px;
   border-top: 1px solid var(--color3);
   border-left: 3px solid var(--color3);
   border-radius: 10px 0 0 10px;
@@ -199,7 +123,6 @@ div#footnote {
 
 div#footnote > p {
   margin: auto;
-  color: white;
   font-size: 10px;
 }
 
@@ -209,13 +132,13 @@ div#footnote button {
   top: 3px;
   right: 3px;
   background-color: var(--color4);
-  color: white;
+  color: var(--color2);
   border: none;
   font-size: 13px;
   cursor: pointer;
 }
 
-/* LEFT PANE: live data + live plots */
+/* style the LEFT PANE: live data + live plots */
 section#outputs {
   position: fixed;
   top: 48px;
@@ -234,7 +157,6 @@ div#livedata {
 
 div#livedata p {
   margin: 0.1em 0;
-  color: white;
   font-size: 13px;
   padding: 2px 0px;
 }
@@ -246,7 +168,6 @@ canvas#plot1 {
   border-right: 3px solid var(--color3);
   border-radius: 0px 15px 15px 0px;
   cursor: pointer;
-  margin: 0px;
 }
 
 canvas#plot2 {
@@ -258,7 +179,7 @@ canvas#plot2 {
   border-radius: 0px 15px 15px 0px;
 }
 
-/* style progress bar */
+/* style the loading page */
 #loading {
     position: fixed;
     top: 0;
@@ -270,7 +191,6 @@ canvas#plot2 {
     align-items: center;
     z-index: 20;
     background-color: var(--color1);
-    color: var(--color2);
 }
 
 #loading p {
