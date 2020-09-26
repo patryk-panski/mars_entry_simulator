@@ -1,3 +1,6 @@
+/* define global variables 
+----------------------------------------------------------*/
+
 :root {
     --color1:black;
     --color2:white;
@@ -6,13 +9,17 @@
     --color5:rgba(0, 0, 0, 0.7);
 }
 
+/* Global styles
+----------------------------------------------------------*/
+
 body {
   margin: 0;
   font-family: Verdana;
   color: var(--color2);
 }
 
-/*style the title of the project*/
+/*the title of the project
+-----------------------------------------------------------*/
 h1 {
   position: absolute;
   /* center a div element */
@@ -25,11 +32,12 @@ h1 {
   text-shadow: 2px 2px var(--color4);
 }
 
-/*style the instruction window*/
+/*the instruction window
+--------------------------------------------------------------*/
 div#instruction {
   position: absolute;
   width: 450px;
-  height: 530px;
+  height: 520px;
   top: 50%;
   left: 50%;
   margin-top: -220px;
@@ -59,20 +67,65 @@ div#instruction li, div#instruction p {
   padding: 4px 10px 4px;
 }
 
-div#instruction button {
-  width: 50px;
+/*the buttons 
+-------------------------------------------------------------*/
+.close-button {
   position: relative;
-  background-color: var(--color4);
-  color: var(--color2);
-  left: 50%;
-  margin-left: -25px;
-  margin-top: 10px;
-  border: 2px solid black;
-  text-align: center;
+  margin-right: 10px;
+  width: 25px;
+  height: 25px;
   cursor: pointer;
 }
+.leftright {
+  height: 4px;
+  width: 25px;
+  position: absolute;
+  margin-top: 11px;
+  background-color: var(--color3);
+  border-radius: 2px;
+  transform: rotate(45deg);
+  transition: all .3s ease-in, visibility 0s;
+}
+.rightleft {
+  height: 4px;
+  width: 25px;
+  position: absolute;
+  margin-top: 11px;
+  background-color: var(--color3);
+  border-radius: 2px;
+  transform: rotate(-45deg);
+  transition: all .3s ease-in, visibility 0s;
+}
+.close {
+  margin: 38px 0 0 -4px;
+  position: absolute;
+}
+.close-button:hover .leftright {
+  transform: rotate(-45deg);
+  background-color: var(--color4);
+}
+.close-button:hover .rightleft {
+  transform: rotate(45deg);
+  background-color: var(--color4);
+}
 
-/*style the success and failure messages as well as the notification for the successful calculation of the results*/
+#instruction .close-button {
+  margin-left: 48%;
+}
+
+/* flex container
+------------------------------------------------------------------------------*/
+.flex-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.flex-item1 {}
+.flex-item2 {}
+
+/*the success and failure messages as well as the notification for the successful calculation of the results
+-----------------------------------------------------------------------------*/
 div#successMessage, div#failureMessage, div#trajCalculated {
   position: absolute;
 
@@ -92,23 +145,15 @@ div#successMessage, div#failureMessage, div#trajCalculated {
 }
 
 div#successMessage p, div#failureMessage p, div#trajCalculated p {
+  display: block;
   text-align: center;
-  padding: 0px 17px;
+  padding: 0;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
-div#successMessage button, div#failureMessage button, div#trajCalculated button {
-  float: right;
-  margin-left: 5px;
-  padding: 1px 6px;
-  background-color: var(--color4);
-  color: var(--color2);
-  border: none;
-  font-size: 15px;
-  cursor: pointer;
-  align-items: center;
-}
-
-/*style the footnote of the simulation*/
+/*the footnote of the simulation
+-------------------------------------------------------------*/
 div#footnote {
   position: fixed;
   width: 200;
@@ -134,11 +179,13 @@ div#footnote button {
   background-color: var(--color4);
   color: var(--color2);
   border: none;
+  border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
 }
 
-/* style the LEFT PANE: live data + live plots */
+/*the LEFT PANE: live data + live plots 
+----------------------------------------------------------------------*/
 section#outputs {
   position: fixed;
   top: 48px;
@@ -179,7 +226,8 @@ canvas#plot2 {
   border-radius: 0px 15px 15px 0px;
 }
 
-/* style the loading page */
+/*the loading page 
+------------------------------------------------------------------------*/
 #loading {
     position: fixed;
     top: 0;

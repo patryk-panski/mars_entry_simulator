@@ -57,7 +57,10 @@
           <li>Mach number: 1.1 - 2.2</li>
           <li>Dynamic pressure: 239 - 850 Pa</li>
         </ul>
-          <button>Close</button>
+        <div class="close-button">
+          <div class="leftright"></div>
+          <div class="rightleft"></div>
+        </div>
       </div>
       
       <section id="outputs">
@@ -76,16 +79,28 @@
       </section>
       
       <!-- MESSAGES -->
-      <div id="successMessage">
-        <p>Parachute can be safely deployed at this point! Congratulations! <button>&#10006;</button></p>
+      <div id="successMessage" class="flex-container">
+        <p class="flex-item1">Parachute can be safely deployed at this point! Congratulations!</p>           
+          <div  class="close-button flex-item2">
+            <div class="leftright"></div>
+            <div class="rightleft"></div>
+          </div>
       </div>
       
-      <div id="failureMessage">
-        <p>You haven't reached the right conditions to safely deploy a parachute. Try again! <button>&#10006;</button></p>
+      <div id="failureMessage" class="flex-container">
+        <p class="flex-item1">You haven't reached the right conditions to safely deploy a parachute. Try again!</p> 
+          <div class="close-button flex-item2">
+            <div class="leftright"></div>
+            <div class="rightleft"></div>
+          </div>
       </div>
       
-      <div id="trajCalculated">
-        <p>Trajectory has been calculated! <button>&#10006;</button></p>
+      <div id="trajCalculated" class="flex-container">
+        <p class="flex-item1">Trajectory has been calculated!</p>
+        <div class="close-button flex-item2">
+          <div class="leftright"></div>
+          <div class="rightleft"></div>
+        </div>
       </div>
 
       <!--SIMULATION-->
@@ -111,16 +126,16 @@
       <script>
         // defines instruction element behaviour
         const instruction = document.querySelector('#instruction'); // grab an instruction element
-        document.querySelector('#instruction button').addEventListener('click', () => instruction.style.visibility = "hidden", false); // when clicked hide the instruction
+        document.querySelector('#instruction .close-button').addEventListener('click', () => instruction.style.visibility = "hidden", false); // when clicked hide the instruction
         document.querySelector('#footnote button').addEventListener('click', () => instruction.style.visibility = "visible", false); // when clicked show the instruction
       
         // defines success and failure messages behaviour
         const successMessage = document.querySelector("#successMessage");
         const failureMessage = document.querySelector("#failureMessage");
         const trajCalculated = document.querySelector("#trajCalculated");
-        document.querySelector("#successMessage button").addEventListener("click", () => successMessage.style.visibility = "hidden", false); // when clicked hide success message
-        document.querySelector("#failureMessage button").addEventListener("click", () => failureMessage.style.visibility = "hidden", false); // when clicked hide failure message
-        document.querySelector("#trajCalculated button").addEventListener("click", () => trajCalculated.style.visibility = "hidden", false); // when clicked hide the notification about calculated trajectory
+        document.querySelector("#successMessage .close-button").addEventListener("click", () => successMessage.style.visibility = "hidden", false); // when clicked hide success message
+        document.querySelector("#failureMessage .close-button").addEventListener("click", () => failureMessage.style.visibility = "hidden", false); // when clicked hide failure message
+        document.querySelector("#trajCalculated .close-button").addEventListener("click", () => trajCalculated.style.visibility = "hidden", false); // when clicked hide the notification about calculated trajectory
       
         // when DOM is loaded run methods from main JS file
         document.addEventListener('DOMContentLoaded', () => { 
