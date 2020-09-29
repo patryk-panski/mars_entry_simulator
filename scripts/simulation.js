@@ -189,7 +189,7 @@ const Mars = {
 };
 Object.freeze(Mars); // shallow freeze the object
 
-// define trajectory options module that can be changed by the gui and will be sent to another thread (worker)
+// define trajectory options module that can be changed by the gui
 const trajectoryOptions = {
   // define initial conditions
   cond: {
@@ -368,393 +368,30 @@ const trajectoryOptions = {
   },
 };
 
-// trajectory_calculate module that calculates trajectory
-const trajectorySolve = (function (lander) {
-  /**
-   * Calculates atmospheric properties from known atmospheric data.
-   *
-   * @param {number} h - current altitude of the lander
-   * @param {number} vInf - current lander velocity
-   * @param {object} lander - contains dimensions of the lander
-   * @param {object} mission - contains atmospheric data
-   *
-   * @return {array} - array with atmospheric properties
-   */
-  function calcAtmoProperties(h, vInf, lander) {
-    // variables from lander object
-    const { diameter } = lander;
-
-    // atmosphere conditions
-    const atm = trajectoryOptions.mission[trajectoryOptions.current];
-
-    let tInf; let pInf; let densInf; let cpInf; let viscInf;
-
-    if (h > 250000) {
-      // assuming the length of the data is 35
-      tInf = atm.temperature[34]; // freestream temperature [K]
-      pInf = atm.pressure[34]; // freestream pressure [Pa]
-      densInf = atm.density[34]; // freestream density [kg/m^3]
-      cpInf = atm.cp[34]; // specific heat at constant pressure [J/kgK]
-      viscInf = atm.viscosity[34]; // dynamic viscosity [Ns/m2]
-    } else {
-      tInf = numeric.spline(atm.altitude, atm.temperature).at(h);
-      pInf = numeric.spline(atm.altitude, atm.pressure).at(h);
-      densInf = numeric.spline(atm.altitude, atm.density).at(h);
-      cpInf = numeric.spline(atm.altitude, atm.cp).at(h);
-      viscInf = numeric.spline(atm.altitude, atm.viscosity).at(h);
-    }
-
-    // calculate freestream properties
-    const R = pInf / (densInf * tInf); // gas constant R
-    const cvInf = cpInf - R; // specific heat at constant volume Cv
-    const gamma = cpInf / cvInf; // ratio of specific heats
-    const aSound = Math.sqrt(gamma * R * tInf); // speed of sound
-    const qInf = 0.5 * densInf * vInf * vInf; // dynamic pressure
-    const mach = vInf / aSound; // Mach number
-    const Re = densInf * vInf * diameter / viscInf; // Reynolds Number
-    const Kn = mach / Re * Math.sqrt(Math.PI * gamma / 2); // Knudsen Number
-    const cpMax = (2 / (mach * mach * gamma)) * (((((gamma + 1) * (gamma + 1) * mach * mach) / (4 * gamma * mach * mach - 2 * (gamma - 1))) ** (gamma / (gamma - 1))) * ((1 - gamma + 2 * gamma * mach * mach) / (gamma + 1)) - 1);
-    // return atmospheric properties
-    return [tInf, pInf, densInf, cpInf, viscInf, R, cvInf, gamma, aSound, qInf, mach, Re, Kn, cpMax];
-  }
-  /**
-   * Calculates cross product of two 3D vectors.
-   * @param {array} a - vector1
-   * @param {array} b - vector2
-   *
-   * @return {array} - cross product of two vectors
-   */
-  function cross(a, b) {
-    // scalar components of the resulting vector
-    const c0 = a[1] * b[2] - a[2] * b[1];
-    const c1 = a[2] * b[0] - a[0] * b[2];
-    const c2 = a[0] * b[1] - a[1] * b[0];
-
-    return [c0, c1, c2];
-  }
-
-  /**
-   * Calculates force and moments aerodynamic coefficients, and angular accelerations.
-   *
-   * @param {number} xyz - mesh coordinates
-   * @param {number} vInfWind - current lander velocity
-   * @param {numbers} - atmosperic properties
-   * @param {numbers} - angles and angular velocities
-   *
-   * @return {array} - array with force and moment coefficients, and angular accelerations
-   */
-  function calcAerodynamics(x, y, z, vInfWind, cpMax, qInf, pInf, alpha, omega) {
-    // define x, y, z axis vectors
-    const xVector = [1, 0, 0]; const yVector = [0, 1, 0]; const zVector = [0, 0, 1];
-
-    // variables from lander object
-    const { mass, diameter, refArea, COMpayload, rPayload, heightPayload, hsThickness, hsDensity } = lander;
-
-    // calculate detailed geometry of the mesh, forces, moments etc.
-    // define whole matrices refilled after each inner loop
-    const dim = x.length - 1;
-    const
-      areas = new Array(dim); const volumes = new Array(dim); const masses = new Array(dim); const normalSX = new Array(dim); const normalSY = new Array(dim); const normalSZ = new Array(dim); const t1locX = new Array(dim); const t1locY = new Array(dim); const t1locZ = new Array(dim); const t2locX = new Array(dim); const t2locY = new Array(dim); const t2locZ = new Array(dim); const locX = new Array(dim); const locY = new Array(dim); const locZ = new Array(dim);
-    const
-      thetasX = new Array(dim); const thetasY = new Array(dim); const thetasZ = new Array(dim); const thetasV = new Array(dim); const hsAngle = new Array(dim); const cps = new Array(dim); const pressures = new Array(dim); const forces = new Array(dim); const forcesX = new Array(dim); const forcesY = new Array(dim); const forcesZ = new Array(dim); const forcesV = new Array(dim); const massMomentsX = new Array(dim); const massMomentsY = new Array(dim); const massMomentsZ = new Array(dim);
-
-    for (let i = 0; i < dim; i++) {
-      // create temporary rows, refilled after each loop
-      const
-        areasR = new Array(dim); const volumesR = new Array(dim); const massesR = new Array(dim); const normalSXR = new Array(dim); const normalSYR = new Array(dim); const normalSZR = new Array(dim); const t1locXR = new Array(dim); const t1locYR = new Array(dim); const t1locZR = new Array(dim); const t2locXR = new Array(dim); const t2locYR = new Array(dim); const t2locZR = new Array(dim); const locXR = new Array(dim); const locYR = new Array(dim); const locZR = new Array(dim);
-      const
-        thetasXR = new Array(dim); const thetasYR = new Array(dim); const thetasZR = new Array(dim); const thetasVR = new Array(dim); const hsAngleR = new Array(dim); const cpsR = new Array(dim); const pressuresR = new Array(dim); const forcesR = new Array(dim); const forcesXR = new Array(dim); const forcesYR = new Array(dim); const forcesZR = new Array(dim); const forcesVR = new Array(dim); const massMomentsXR = new Array(dim); const massMomentsYR = new Array(dim); const massMomentsZR = new Array(dim);
-
-      for (let j = 0; j < dim; j++) {
-        const vector1 = [x[i][j], y[i][j], z[i][j]]; // define first corner of trapezoid
-        const vector2 = [x[i + 1][j], y[i + 1][j], z[i + 1][j]]; // define second corner of trapezoid
-        const vector3 = [x[i][j + 1], y[i][j + 1], z[i][j + 1]]; // define third corner of trapezoid
-        const vector4 = [x[i + 1][j + 1], y[i + 1][j + 1], z[i + 1][j + 1]]; // define fourth corner of trapezoid
-        const side1 = numeric.sub(vector2, vector1); // define side vector of trapezoid
-        const length1 = numeric.norm2(side1); // calculate side length of trapezoid
-        const side2 = numeric.sub(vector3, vector1); // define top vector of trapezoid
-        const length2 = numeric.norm2(side2); // calculate top length of trapezoid
-        const side3 = numeric.sub(vector4, vector2); // define base vector of trapezoid
-        const length3 = numeric.norm2(side3); // calculate base length of trapezoid
-        const height = Math.sqrt(length1 * length1 - 0.25 * (length3 - length2) * (length3 - length2)); // calculate isosceles trapezoid height
-
-        const cross1 = numeric.sub(vector2, vector3); // define diagonal vector 1 across trapezoid
-        const cross2 = numeric.sub(vector4, vector1); // define diagonal vector 2 across trapezoid
-        let normalS = cross(cross2, cross1); // calculate surface normal via cross product of diagonals
-        normalS = numeric.div(normalS, numeric.norm2(normalS)); // normalise surface normal
-        [normalSXR[j], normalSYR[j], normalSZR[j]] = normalS; // place x, y, z co-ords of surface normalS into matrix
-        areasR[j] = 0.5 * (length2 + length3) * height; // calculate trapezoid area
-        volumesR[j] = areasR[j] * hsThickness; // calculate volumes
-        massesR[j] = volumesR[j] * hsDensity; // calculate masses
-        t1locXR[j] = (x[i][j] + x[i + 1][j] + x[i + 1][j + 1]) / 3; // triangle 1 centroid x co-ord (for calculating trapezoid centroid)
-        t1locYR[j] = (y[i][j] + y[i + 1][j] + y[i + 1][j + 1]) / 3; // triangle 1 centroid y co-ord
-        t1locZR[j] = (z[i][j] + z[i + 1][j] + z[i + 1][j + 1]) / 3; // triangle 1 centroid z co-ord
-        t2locXR[j] = (x[i][j] + x[i][j + 1] + x[i + 1][j + 1]) / 3; // triangle 2 centroid x co-ord
-        t2locYR[j] = (y[i][j] + y[i][j + 1] + y[i + 1][j + 1]) / 3; // triangle 2 centroid y co-ord
-        t2locZR[j] = (z[i][j] + z[i][j + 1] + z[i + 1][j + 1]) / 3; // triangle 2 centroid z co-ord
-        const t1Area = 0.5 * length3 * height; // area of triangle 1
-        const t2Area = 0.5 * length2 * height; // area of triangle 2
-        locXR[j] = (t1locXR[j] * t1Area + t2locXR[j] * t2Area) / areasR[j]; // trapezoid centroid x co-ord
-        locYR[j] = (t1locYR[j] * t1Area + t2locYR[j] * t2Area) / areasR[j]; // trapezoid centroid y co-ord
-        locZR[j] = (t1locZR[j] * t1Area + t2locZR[j] * t2Area) / areasR[j]; // trapezoid centroid z co-ord
-        thetasXR[j] = Math.atan2(numeric.norm2(cross(normalS, xVector)), numeric.dot(normalS, xVector)); // angle between normal and x-axis (Matlab recommended formula)
-        thetasYR[j] = Math.atan2(numeric.norm2(cross(normalS, yVector)), numeric.dot(normalS, yVector)); // angle between normal and y-axis
-        thetasZR[j] = Math.atan2(numeric.norm2(cross(normalS, zVector)), numeric.dot(normalS, zVector)); // angle between normal and z-axis
-        thetasVR[j] = Math.atan2(numeric.norm2(cross(normalS, vInfWind)), numeric.dot(normalS, vInfWind)); // angle between normal and velocity vector
-        hsAngleR[j] = thetasVR[j] - Math.PI / 2; // angle of heatshield to velocity vector for modified Newtonian calculation
-        cpsR[j] = cpMax * (Math.sin(hsAngleR[j])) * (Math.sin(hsAngleR[j])); // pressure coefficient using modified Newtonian method
-        pressuresR[j] = cpsR[j] * qInf + pInf; // pressure calculation
-        forcesR[j] = pressuresR[j] * areasR[j]; // force normal to surface
-        forcesXR[j] = forcesR[j] * Math.cos(thetasXR[j]); // force compoment in x direction
-        forcesYR[j] = forcesR[j] * Math.cos(thetasYR[j]); // force compoment in y direction
-        forcesZR[j] = forcesR[j] * Math.cos(thetasZR[j]); // force component in z direction
-        forcesVR[j] = forcesR[j] * Math.cos(thetasVR[j]); // force compoment in velocity direction
-        massMomentsXR[j] = massesR[j] * locXR[j];
-        massMomentsYR[j] = massesR[j] * locYR[j];
-        massMomentsZR[j] = massesR[j] * locZR[j];
-      }
-      // fill whole matrices with rows
-      areas[i] = areasR; volumes[i] = volumesR; masses[i] = massesR; normalSX[i] = normalSXR; normalSY[i] = normalSYR; normalSZ[i] = normalSZR; t1locX[i] = t1locXR; t1locY[i] = t1locYR; t1locZ[i] = t1locZR; t2locX[i] = t2locXR; t2locY[i] = t2locYR; t2locZ[i] = t2locZR; locX[i] = locXR; locY[i] = locYR; locZ[i] = locZR; thetasX[i] = thetasXR; thetasY[i] = thetasYR; thetasZ[i] = thetasZR; thetasV[i] = thetasVR; hsAngle[i] = hsAngleR; cps[i] = cpsR; pressures[i] = pressuresR; forces[i] = forcesR; forcesX[i] = forcesXR; forcesY[i] = forcesYR; forcesZ[i] = forcesZR; forcesV[i] = forcesVR; massMomentsX[i] = massMomentsXR; massMomentsY[i] = massMomentsYR; massMomentsZ[i] = massMomentsZR;
-    }
-
-    // calculate total forces, masses and COM
-    const totalForcesX = numeric.sum(forcesX);
-    // const totalForcesY = numeric.sum(forcesY); //UNUSED
-    const totalForcesZ = numeric.sum(forcesZ);
-    const massHS = numeric.sum(masses); // heatshield mass (kg)
-    const massPL = mass - massHS; // payload mass
-    const COMx = (numeric.sum(massMomentsX) + massPL * COMpayload[0]) / mass; // X-coord of centre of mass
-    const COMy = (numeric.sum(massMomentsY) + massPL * COMpayload[1]) / mass; // Y-coord of centre of mass
-    const COMz = (numeric.sum(massMomentsZ) + massPL * COMpayload[2]) / mass; // Z-coord of centre of mass
-    // const COM = [COMx, COMy, COMz]; // centre of mass vector //UNUSED
-
-    // find moments of inertia and moments about centre of mass
-    // define whole matrices refilled after each inner loop
-    const Ixx = new Array(dim); const Iyy = new Array(dim); const Izz = new Array(dim); const Ixy = new Array(dim); const Ixz = new Array(dim); const Iyz = new Array(dim); const forceMomentsX = new Array(dim); const forceMomentsY = new Array(dim); const forceMomentsZ = new Array(dim);
-    // moments of force about the centre of mass
-
-    for (let i = 0; i < dim; i++) {
-      // preallocate rows for the matrices
-      const IxxR = new Array(dim); const IyyR = new Array(dim); const IzzR = new Array(dim); const IxyR = new Array(dim); const IxzR = new Array(dim); const IyzR = new Array(dim); const forceMomentsXR = new Array(dim); const forceMomentsYR = new Array(dim); const forceMomentsZR = new Array(dim);
-
-      for (let j = 0; j < dim; j++) {
-        // fill rows with elements
-        IxxR[j] = ((locY[i][j] - COMy) * (locY[i][j] - COMy) + (locZ[i][j] - COMz) * (locZ[i][j] - COMz)) * masses[i][j];
-        IyyR[j] = ((locX[i][j] - COMx) * (locX[i][j] - COMx) + (locZ[i][j] - COMz) * (locZ[i][j] - COMz)) * masses[i][j];
-        IzzR[j] = ((locX[i][j] - COMx) * (locX[i][j] - COMx) + (locY[i][j] - COMy) * (locY[i][j] - COMy)) * masses[i][j];
-        IxyR[j] = ((locX[i][j] - COMx) * (locY[i][j] - COMy)) * masses[i][j];
-        IxzR[j] = ((locX[i][j] - COMx) * (locZ[i][j] - COMz)) * masses[i][j];
-        IyzR[j] = ((locY[i][j] - COMy) * (locZ[i][j] - COMz)) * masses[i][j];
-        forceMomentsXR[j] = forcesZ[i][j] * (locY[i][j] - COMy) - forcesY[i][j] * (locZ[i][j] - COMz); // moments of force about the centre of mass
-        forceMomentsYR[j] = -forcesZ[i][j] * (locX[i][j] - COMx) + forcesX[i][j] * (locZ[i][j] - COMz); // pitching moment
-        forceMomentsZR[j] = forcesY[i][j] * (locX[i][j] - COMx) - forcesX[i][j] * (locY[i][j] - COMy);
-      }
-      // fill matrices with arrays
-      Ixx[i] = IxxR; Iyy[i] = IyyR; Izz[i] = IzzR; Ixy[i] = IxyR; Ixz[i] = IxzR; Iyz[i] = IyzR;
-      forceMomentsX[i] = forceMomentsXR; forceMomentsY[i] = forceMomentsYR; forceMomentsZ[i] = forceMomentsZR;
-    }
-
-    // create moment of inertia matrix and force moments vector
-    const totalIxx = numeric.sum(Ixx) + 0.1535 + massPL * rPayload * rPayload / 2 + massPL * (COMpayload[0] - COMx) * (COMpayload[0] - COMx);
-    const totalIyy = numeric.sum(Iyy) - 0.4664 + massPL / 12 * (3 * rPayload * rPayload + heightPayload * heightPayload) + massPL * (COMpayload[1] - COMy) * (COMpayload[1] - COMy);
-    const totalIzz = numeric.sum(Izz) + 0.6236 + massPL / 12 * (3 * rPayload * rPayload + heightPayload * heightPayload) + massPL * (COMpayload[2] - COMz) * (COMpayload[2] - COMz);
-    const totalIxy = numeric.sum(Ixy) - 0.3424;
-    const totalIxz = numeric.sum(Ixz) + 0.1486;
-    const totalIyz = numeric.sum(Iyz) + 1.4477;
-    const totalFMX = numeric.sum(forceMomentsX); // summing moments of force
-    const totalFMY = numeric.sum(forceMomentsY);
-    const totalFMZ = numeric.sum(forceMomentsZ);
-    const totalFM = [totalFMX, totalFMY, totalFMZ];
-    const IMatrix = [[totalIxx, totalIxy, totalIxz], [totalIxy, totalIyy, totalIyz], [totalIxz, totalIyz, totalIzz]]; // create moment of inertia matrix
-
-    // calculate angular accelerations/omega dots
-    const angAccels = numeric.solve(IMatrix, numeric.sub(totalFM, cross(omega, numeric.dot(IMatrix, omega))));
-
-    // calculate centres of pressure
-    // const COPx = -totalFMY / totalForcesZ; // UNUSED
-    // const COPy = totalFMX / totalForcesZ; // UNUSED
-    // const COPz = totalFMY / totalForcesX; // UNUSED
-    // const COP = [COPx, COPy, COPz]; // UNUSED
-
-    // calculate aerodynamic coefficients
-    const A = -totalForcesX;
-    const N = -totalForcesZ;
-    // const Y = totalForcesY; // UNUSED
-    const Ca = A / (qInf * refArea); // axial force coefficient
-    const Cn = N / (qInf * refArea); // normal force coefficient
-    // const Cy = Y / (qInf * refArea); // side force coefficient //UNUSED
-    const Cl = Cn * Math.cos(alpha) - Ca * Math.sin(alpha); // lift coefficient
-    const Cd = Cn * Math.sin(alpha) + Ca * Math.cos(alpha); // drag coefficient
-    const Croll = totalFMX / (qInf * refArea * diameter); // roll moment coefficient
-    const Cpitch = totalFMY / (qInf * refArea * diameter); // pitch moment coefficient
-    const Cyaw = totalFMZ / (qInf * refArea * diameter); // yaw moment coefficient
-    const LDRatio = Cl / Cd;
-
-    return [Cl, Cd, LDRatio, Croll, Cpitch, Cyaw, angAccels];
-  }
-
-  /**
-   * Calculates derivatives of state variables. Root function used for ODE solver.
-   *
-   * @param {number} t - time
-   * @param {number} variables - lander's position and orientation coordinates, linear and angular velocities
-   *
-   * @return {array} - array with derivatives of state variables
-   */
-  function calcTrajChange(t, variables) {
-    // define variables from the lander object
-    const { mass, refArea } = lander;
-
-    // define major trajectory variables from the input
-    const [r, lat, , u, v, w, e0, e1, e2, e3, omegaX, omegaY, omegaZ] = variables;
-
-    // calculate other trajectory variables from the input
-    const h = r - Mars.r;
-    const vInfGc = [u, v, w];
-    const vInf = Math.sqrt(u * u + v * v + w * w);
-    const FPA = Math.asin(w / vInf);
-    const azi = Math.atan2(v, u); // asin(v/Vinf*cos(FPA));
-    // const roll = Math.atan2(2 * e0 * e1 + 2 * e2 * e3, e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3); // UNUSED
-    // const pitch = -Math.asin(2 * (e1 * e3 - e0 * e2));  // 1,2,3 Quaternion to Euler angle conversion (Diebel, 2006)
-    // const yaw = Math.atan2(2 * e1 * e2 + 2 * e0 * e3, e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3);
-    const omega = [omegaX, omegaY, omegaZ];
-
-    // set up rotation matrices from quaternions
-    // transformation matrix from geodetic to body frame (Karlgaard, 2006)
-    const Ggd2b = [[e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3, 2 * (e1 * e2 + e0 * e3), 2 * (e1 * e3 - e0 * e2)], [2 * (e1 * e2 - e0 * e3), e0 * e0 - e1 * e1 + e2 * e2 - e3 * e3, 2 * (e0 * e1 + e2 * e3)], [2 * (e1 * e3 + e0 * e2), 2 * (e2 * e3 - e0 * e1), e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3]];
-    // transformation matrix from body to geodetic frame
-    // const Gb2gd = numeric.transpose(Ggd2b); // UNUSED
-    const Ggc2gd = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-    // assuming Mars is spherical, there is no difference between geocentric and geodetic
-    const Ggc2b = numeric.dot(Ggc2gd, Ggd2b);
-    // const Gb2gc = numeric.transpose(Ggc2b); //UNUSED
-
-    // define velocities and angles in body frame from input
-    const vInfB = numeric.dot(Ggc2b, vInfGc); // velocity vector in body frame MxV
-    const [vX, vY, vZ] = vInfB; // x, y, z body frame velocity coordinates
-
-    const beta = Math.atan2(vY, Math.sqrt(vX * vX + vZ * vZ)); // sideslip angle
-    const alpha = Math.atan2(vZ, vX); // angle of attack
-    // const bank = Math.atan2(2 * (e0 * e1 + e2 * e3) + Math.sin(beta) * Math.sin(-FPA), ((e0 * e0 - e1 * e1 + e2 * e2 - e3 * e3) * Math.cos(azi) - (2 * (e1 * e2 - e0 * e3)) * Math.sin(azi)) * Math.cos(-FPA)); //bank angle //UNUSED
-    const vInfWind = [vInf * Math.cos(beta) * Math.cos(alpha), vInf * Math.sin(beta), vInf * Math.cos(beta) * Math.sin(alpha)]; // wind velocity vector in body frame
-    // const alphaTotal = Math.acos(Math.cos(alpha) * Math.cos(beta)); //UNUSED
-    // const phi_a = Math.atan2(Math.tan(beta), Math.sin(alpha)); //UNUSED
-
-    // calculate atmospheric properties
-    const [, pInf, , , , , , , , qInf, , , , cpMax] = calcAtmoProperties(h, vInf, lander);
-
-    // define mesh coordinates
-    const { x, y, z } = lander.mesh;
-
-    // calculate aerodynamic coefficients and angular accelerations
-    const [Cl, Cd, , , , , angAccels] = calcAerodynamics(x, y, z, vInfWind, cpMax, qInf, pInf, alpha, omega);
-    const [omegaXDot, omegaYDot, omegaZDot] = angAccels;
-
-    // calculate heating values
-    // const qConv = Mars.k * Math.sqrt(densInf / rNose) * vInf * vInf * vInf / 10000; // Sutton-Graves relation for convective heat flux at stagnation point [W/cm2]
-    // let qRad;
-    // if (vInf > 6500) {
-    // const TSv = numeric.spline(TauberSuttonVelocityFunction.velocity, TauberSuttonVelocityFunction.fv).at(vInf);
-    // qRad = Mars.C * (rNose ** Mars.a) * (densInf ** Mars.b) * TSv; // Tauber-Sutton relation for radiative heat flux at stagnation point [W/cm2]
-    // } else {
-    // qRad = 0;
-    // }
-    // const qTotal = qConv + qRad; //UNUSED
-    // const tempNose = ((qTotal / (5.670373e-12)) ** 0.25); // UNUSED
-
-    // calculate aerodynamic forces and decelerations
-    // forces
-    const drag = Cd * qInf * refArea; // drag force [N]
-    const lift = Cl * qInf * refArea; // lift force [N]
-    // const BC = mass / (Cd * refArea); // ballistic coefficient [kg/m2] //UNUSED
-    // drag components //UNUSED
-    const Du = -drag * Math.cos(FPA) * Math.cos(azi); // component of drag force in N direction [N]
-    const Dv = -drag * Math.cos(FPA) * Math.sin(azi); // component of drag force in E direction [N]
-    const Dw = -drag * Math.sin(FPA); // component of drag force in D direction [N]
-    // const Dgc = [Du, Dv, Dw]; // UNUSED
-    // const Dbody = numeric.dot(Ggc2b,Dgc); // UNUSED
-    // lift components
-    const Lu = lift * Math.sin(FPA) * Math.cos(azi); // component of lift force in N direction [N]
-    const Lv = lift * Math.sin(FPA) * Math.sin(azi); // component of lift force in E direction [N]
-    const Lw = -lift * Math.cos(FPA); // component of lift force in D direction [N]
-    // const Lgc = [Lu, Lv, Lw]; // UNUSED
-    // const Lbody = numeric.dot(Ggc2b, Lgc); // UNUSED
-    // decelerations
-    const au = (Du + Lu) / mass; // component of aerodynamic acceleration in N direction [m/s2]
-    const av = (Dv + Lv) / mass; // component of aerodynamic acceleration in E direction [m/s2]
-    const aw = (Dw + Lw) / mass; // component of aerodynamic acceleration in D direction [m/s2]
-    // const a = Math.sqrt(au * au + av * av + aw * aw);  // total aerodynamic acceleration //UNUSED
-    // const gload = a / 9.81;  //total g-load imparted to vehicle //UNUSED
-    // const agc = [au, av, aw]; //UNUSED
-    // const abody = numeric.dot(Ggc2b, agc); //UNUSED
-
-    // gravitational model
-    const J = 3 / 2 * Mars.J2 * Mars.r * Mars.r; // Wagner (1970) definition
-    const gu = -(Mars.mu * J * Math.sin(2 * lat) / (r * r * r * r)); // component of gravitational acceleration in N direction [m/s2] Wagner (1970)
-    const gv = 0; // component of gravitational acceleration in E direction [m/s2]
-    const gw = (Mars.mu / (r * r)) - (Mars.mu * (2 - 3 * Math.cos(lat) * Math.cos(lat)) / (r * r * r * r)); // component of gravitational acceleration in D direction [m/s2]
-    // const g = Math.sqrt(gu * gu + gv * gv + gw * gw); // total gravitational acceleration //UNUSED
-    // const ggc = [gu, gv, gw]; // UNUSED
-    // const gbody = numeric.dot(Ggc2b, ggc); // UNUSED
-
-    // run equations of motion
-    const rdot = -w; // rate of change of r [m/s] (Karlgaard, 2009)
-    const latdot = u / r; // rate of change of latitude [rad/s]
-    const londot = v / (r * Math.cos(lat)) - Mars.omega; // rate of change of longitude [rad/s] POSITIVE FOR RETROGRADE
-    const udot = au + (1 / r) * (u * w - v * v * Math.tan(lat)) + gu - 2 * Mars.omega * v * Math.sin(lat); // acceleration in N direction [m/s2] (Karlgaard, 2009) (added Coriolis + centrifugal)
-    const vdot = av + (1 / r) * (u * v * Math.tan(lat) + v * w) + gv + 2 * Mars.omega * (w * Math.cos(lat) + u * Math.sin(lat)); // acceleration in E direction [m/s2] (added Coriolis + centrifugal)
-    const wdot = aw - (1 / r) * (u * u + v * v) + gw - 2 * Mars.omega * v * Math.cos(lat); // acceleration in D direction [m/s2] (added Coriolis + centrifugal)
-    // const dec = Math.sqrt((udot - gu) * (udot - gu) + (vdot - gv) * (vdot - gv) + (wdot - gw) * (wdot - gw)); // total deceleration //UNUSED
-
-    // attitude dot (quaternions)
-    const multiplic = numeric.sub(omega, numeric.mul((1 / r), numeric.dot(Ggc2b, [v, -u, -v * Math.tan(lat)])));
-    const e0dot = 0.5 * numeric.dot([-e1, -e2, -e3], multiplic);
-    const e1dot = 0.5 * numeric.dot([e0, -e3, e2], multiplic);
-    const e2dot = 0.5 * numeric.dot([e3, e0, -e1], multiplic);
-    const e3dot = 0.5 * numeric.dot([-e2, e1, e0], multiplic);
-
-    // return the results
-    return [rdot, latdot, londot, udot, vdot, wdot, e0dot, e1dot, e2dot, e3dot, omegaXDot, omegaYDot, omegaZDot];
-  }
-
-  /**
-   * Performs ODE intergration with calcTrajChange function.
-   *
-   * @param {number} tMax - maximum time used for the ODE solver
-   * @param {number} precision - accuracy of the results, the lower the better
-   * @param {number} numberOfSteps - maximum allowable number of steps for the ODE solver
-   *
-   * @return {object} - DOPRI object with all state variables for each timestep.
-   */
-  function solve(tMax = 350, precision = 1e-6, numberOfSteps = 15000) {
-    // define initial conditions
-    const var0 = [trajectoryOptions.cond.r, trajectoryOptions.cond.lat, trajectoryOptions.cond.lon, trajectoryOptions.cond.u, trajectoryOptions.cond.v, trajectoryOptions.cond.w, trajectoryOptions.cond.e0, trajectoryOptions.cond.e1, trajectoryOptions.cond.e2, trajectoryOptions.cond.e3, trajectoryOptions.cond.omegaX, trajectoryOptions.cond.omegaY, trajectoryOptions.cond.omegaZ];
-
-    // define event function for the ODE solver - stops integration when mach number reaches 2.5
-    function eventF(t, y) {
-      const h = y[0] - Mars.r;
-      const vInf = Math.sqrt(y[3] * y[3] + y[4] * y[4] + y[5] * y[5]);
-      const mach = calcAtmoProperties(h, vInf, lander)[10];
-      const qInf = calcAtmoProperties(h, vInf, lander)[9];
-
-      const checkArr = [1 - mach, 7000 - h, 200 - qInf];
-      // conditions a bit lower to enable game logic to check and display the outcome
-      if (checkArr.every(el => (el > 0)) || h < 7000 || mach < 1) {
-        return 1; // stop the ODE solver
-      }
-      return -1; // continue with calculations
-    }
-    // ode integration using Dormand-Prince RK method (ode45 in Matlab)
-    return numeric.dopri(0, tMax, var0, calcTrajChange, precision, numberOfSteps, eventF); // for best precision 1e-10
-  }
-
-  // public object
-  return { solve };
-})(lander);
-
 // ////////////////////
 // RESULTS (MODULE 3)//
 // ////////////////////
+// define a worker that will calculate new trajectory in a new thread
+const worker = new Worker('scripts/trajectory-worker.js');
+// add event listener to the worker on the main thread
+worker.addEventListener('message', (event) => {
+  // register results sent by the worker
+  results.sol = event.data.data1;
+
+  // transform the raw results into arrays used by the animation system (THREE.js)
+  const { scale } = lander.mesh;
+  results.createArrays(results.sol, results.arr, scale);
+  // create spline objects for interpolation
+  results.createSplines(results.arr, results.spline);
+
+  // initialize live outputs and animation for three.js
+  liveOutputs.init();
+  G.defineAnim(results);
+
+  // display notification to notify the user that the trajectory has been calculated
+  const trajCalculated = document.querySelector('#trajCalculated');
+  trajCalculated.style.visibility = 'visible';
+});
 
 // This module transforms results obtained from traj module into
 // a format that THREE.js can use. Create splines that are used for interpolation.
@@ -763,29 +400,41 @@ const results = {
   arr: {}, // arrays used by the animation system (THREE.js)
   spline: {}, // spline objects for interpolation
   /**
-  * Gets the initial results from the traj object.
-  */
-  calc() {
-    this.sol = trajectorySolve.solve();
-  },
-  /**
-  * Container function for init, createArrays and createSplines functions.
-  * Controlled by GUI.
+  * Container function for trajectorySolve.solve(), createArrays and createSplines functions.
+  * This runs when the button "Calculate" is pressed
   */
   run() {
-    // send a message to a worker to calculate trajectory
-    this.calc();
+    // define data that will be sent to a worker
+    // trajectory data
+    const data1 = {
+      cond: trajectoryOptions.cond,
+      current: trajectoryOptions.current,
+    };
+    // lander geometry data
+    const data2 = {
+      mass: lander.mass,
+      diameter: lander.diameter,
+      rBody: lander.rBody,
+      rNose: lander.rNose,
+      rShoulder: lander.rShoulder,
+      sphereConeAngleDeg: lander.sphereConeAngleDeg,
+      theta: lander.theta,
+      refArea: lander.refArea,
+      COMx: lander.COMx,
+      COMpayload: lander.COMpayload,
+      rPayload: lander.rPayload,
+      heightPayload: lander.heightPayload,
+      hsThickness: lander.hsThickness,
+      hsDensity: lander.hsDensity,
+      mesh: lander.mesh,
+    };
+    // send a message with all necessary data to a worker to calculate trajectory
+    worker.postMessage({
+      data1,
+      data2,
+    });
 
-    // transform the results into arrays used by the animation system (THREE.js)
-    const { scale } = lander.mesh;
-    this.createArrays(this.sol, this.arr, scale);
-
-    // create spline objects for interpolation
-    this.createSplines(this.arr, this.spline);
-
-    // display notification
-    const trajCalculated = document.querySelector('#trajCalculated');
-    trajCalculated.style.visibility = 'visible';
+    // show a notification to make a user wait for the results (TODO)
   },
   /**
   * Transforms initial sol object from ODE solver into separate arrays.
@@ -1877,9 +1526,8 @@ function setupGUI() {
   // ATMOSPHERES
   gui.add(trajectoryOptions, 'current', { Pathfinder: 'pathfinder', Curiosity: 'curiosity', Opportunity: 'opportunity', Phoenix: 'phoenix', Schiaparelli: 'schiaparelli', Spirit: 'spirit' }).name('Atmosphere');
 
-  // TRAJECTORY function - save function
-  const save = gui.add(results, 'run').name('CALCULATE');
-  save.onFinishChange(() => { liveOutputs.init(); G.defineAnim(results); });
+  // TRAJECTORY function - triggers calculation of the trajectory
+  const run = gui.add(results, 'run').name('CALCULATE');
 
   // create folder for animation
   folder = gui.addFolder('ANIMATION');
