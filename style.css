@@ -109,6 +109,7 @@ div#instruction li, div#instruction p {
   background-color: var(--color4);
 }
 
+/* center horizontally the button on the instruction page*/
 #instruction .close-button {
   margin-left: 48%;
 }
@@ -117,7 +118,6 @@ div#instruction li, div#instruction p {
 ------------------------------------------------------------------------------*/
 .flex-container {
   display: flex;
-  flex-direction: row;
   justify-content: center;
   align-items: center;
 }
