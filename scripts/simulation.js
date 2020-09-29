@@ -189,10 +189,10 @@ const Mars = {
 };
 Object.freeze(Mars); // shallow freeze the object
 
-// trajectory module that calculates trajectory
-const traj = (function (lander) {
+// define trajectory options module that can be changed by the gui and will be sent to another thread (worker)
+const trajectoryOptions = {
   // define initial conditions
-  const cond = {
+  cond: {
     // initial angles
     FPADeg: 17, // * Flight Path Angle [deg down from horizontal]
     aziDeg: 77, // * azimuth [deg from N]
@@ -253,12 +253,17 @@ const traj = (function (lander) {
     get tOrb() { return 2 * Math.PI * (Mars.r + this.h) / this.vOrb; }, // orbital period for circular orbit
     Qload: 0, // heat load at entry interface point (EIP)
 
-  };
-
+  },
   // define mission object containing objects with atmospheric properties (object)
   // store current
-  const current = 'pathfinder';
-  const mission = {
+  current: 'pathfinder',
+  // define TauberSuttonVelocityFunction (object)
+  TauberSuttonVelocityFunction: {
+    velocity: [6000, 6150, 6300, 6500, 6700, 6900, 7000, 7200, 7400, 7600, 7800, 8000, 8200, 8400, 8600, 8800, 9000],
+    fv: [0.20, 1, 1.950, 3.420, 5.100, 7.100, 8.100, 10.20, 12.50, 14.80, 17.10, 19.20, 21.40, 24.10, 26, 28.90, 32.80],
+  },
+  // define mission object containing objects with atmospheric properties (object)
+  mission: {
     // Pathfinder atmosphere
     pathfinder: {
       altitude: [0, 7352.94, 14705.9, 22058.8, 29411.8, 36764.7, 44117.6, 51470.6, 58823.5, 66176.5, 73529.4, 80882.4, 88235.3, 95588.2, 102941, 110294, 117647, 125000, 132353, 139706, 147059, 154412, 161765, 169118, 176471, 183824, 191176, 198529, 205882, 213235, 220588, 227941, 235294, 242647, 250000],
@@ -313,14 +318,58 @@ const traj = (function (lander) {
       cp: [732.72, 770.92, 753.60, 738.16, 723.45, 714.40, 707.29, 700.45, 694.04, 685.22, 663.74, 652.47, 647.19, 640.96, 631.22, 615.03, 618.81, 655.66, 689.12, 713.36, 734.75, 757.41, 784.10, 816.36, 854.88, 899.20, 945.67, 995.34, 1041.33, 1085.42, 1121.07, 1160.91, 1181.37, 1205.31, 1226.07],
       viscosity: [9.66e-06, 1.13e-05, 1.05e-05, 9.88e-06, 9.29e-06, 8.93e-06, 8.65e-06, 8.39e-06, 8.15e-06, 7.82e-06, 7.05e-06, 6.66e-06, 6.47e-06, 6.25e-06, 5.92e-06, 5.38e-06, 5.43e-06, 6.50e-06, 7.50e-06, 8.11e-06, 8.52e-06, 8.83e-06, 9.12e-06, 9.41e-06, 9.73e-06, 1.01e-05, 1.04e-05, 1.07e-05, 1.10e-05, 1.12e-05, 1.14e-05, 1.16e-05, 1.17e-05, 1.18e-05, 1.19e-05],
     },
-  };
+  },
+  /**
+   * Calculates atmospheric properties from known atmospheric data.
+   *
+   * @param {number} h - current altitude of the lander
+   * @param {number} vInf - current lander velocity
+   * @param {object} lander - contains dimensions of the lander
+   * @param {object} mission - contains atmospheric data
+   *
+   * @return {array} - array with atmospheric properties
+   */
+  calcAtmoProperties(h, vInf, lander) {
+    // variables from lander object
+    const { diameter } = lander;
 
-  // define TauberSuttonVelocityFunction (object) (private)
-  const TauberSuttonVelocityFunction = {
-    velocity: [6000, 6150, 6300, 6500, 6700, 6900, 7000, 7200, 7400, 7600, 7800, 8000, 8200, 8400, 8600, 8800, 9000],
-    fv: [0.20, 1, 1.950, 3.420, 5.100, 7.100, 8.100, 10.20, 12.50, 14.80, 17.10, 19.20, 21.40, 24.10, 26, 28.90, 32.80],
-  };
+    // atmosphere conditions
+    const atm = this.mission[trajectoryOptions.current];
 
+    let tInf; let pInf; let densInf; let cpInf; let viscInf;
+
+    if (h > 250000) {
+      // assuming the length of the data is 35
+      tInf = atm.temperature[34]; // freestream temperature [K]
+      pInf = atm.pressure[34]; // freestream pressure [Pa]
+      densInf = atm.density[34]; // freestream density [kg/m^3]
+      cpInf = atm.cp[34]; // specific heat at constant pressure [J/kgK]
+      viscInf = atm.viscosity[34]; // dynamic viscosity [Ns/m2]
+    } else {
+      tInf = numeric.spline(atm.altitude, atm.temperature).at(h);
+      pInf = numeric.spline(atm.altitude, atm.pressure).at(h);
+      densInf = numeric.spline(atm.altitude, atm.density).at(h);
+      cpInf = numeric.spline(atm.altitude, atm.cp).at(h);
+      viscInf = numeric.spline(atm.altitude, atm.viscosity).at(h);
+    }
+
+    // calculate freestream properties
+    const R = pInf / (densInf * tInf); // gas constant R
+    const cvInf = cpInf - R; // specific heat at constant volume Cv
+    const gamma = cpInf / cvInf; // ratio of specific heats
+    const aSound = Math.sqrt(gamma * R * tInf); // speed of sound
+    const qInf = 0.5 * densInf * vInf * vInf; // dynamic pressure
+    const mach = vInf / aSound; // Mach number
+    const Re = densInf * vInf * diameter / viscInf; // Reynolds Number
+    const Kn = mach / Re * Math.sqrt(Math.PI * gamma / 2); // Knudsen Number
+    const cpMax = (2 / (mach * mach * gamma)) * (((((gamma + 1) * (gamma + 1) * mach * mach) / (4 * gamma * mach * mach - 2 * (gamma - 1))) ** (gamma / (gamma - 1))) * ((1 - gamma + 2 * gamma * mach * mach) / (gamma + 1)) - 1);
+    // return atmospheric properties
+    return [tInf, pInf, densInf, cpInf, viscInf, R, cvInf, gamma, aSound, qInf, mach, Re, Kn, cpMax];
+  },
+};
+
+// trajectory_calculate module that calculates trajectory
+const trajectorySolve = (function (lander) {
   /**
    * Calculates atmospheric properties from known atmospheric data.
    *
@@ -336,7 +385,7 @@ const traj = (function (lander) {
     const { diameter } = lander;
 
     // atmosphere conditions
-    const atm = mission[current];
+    const atm = trajectoryOptions.mission[trajectoryOptions.current];
 
     let tInf; let pInf; let densInf; let cpInf; let viscInf;
 
@@ -679,7 +728,7 @@ const traj = (function (lander) {
    */
   function solve(tMax = 350, precision = 1e-6, numberOfSteps = 15000) {
     // define initial conditions
-    const var0 = [cond.r, cond.lat, cond.lon, cond.u, cond.v, cond.w, cond.e0, cond.e1, cond.e2, cond.e3, cond.omegaX, cond.omegaY, cond.omegaZ];
+    const var0 = [trajectoryOptions.cond.r, trajectoryOptions.cond.lat, trajectoryOptions.cond.lon, trajectoryOptions.cond.u, trajectoryOptions.cond.v, trajectoryOptions.cond.w, trajectoryOptions.cond.e0, trajectoryOptions.cond.e1, trajectoryOptions.cond.e2, trajectoryOptions.cond.e3, trajectoryOptions.cond.omegaX, trajectoryOptions.cond.omegaY, trajectoryOptions.cond.omegaZ];
 
     // define event function for the ODE solver - stops integration when mach number reaches 2.5
     function eventF(t, y) {
@@ -700,13 +749,7 @@ const traj = (function (lander) {
   }
 
   // public object
-  return {
-    cond,
-    current,
-    calcAtmoProperties,
-    TauberSuttonVelocityFunction,
-    solve,
-  };
+  return { solve };
 })(lander);
 
 // ////////////////////
@@ -723,13 +766,14 @@ const results = {
   * Gets the initial results from the traj object.
   */
   calc() {
-    this.sol = traj.solve();
+    this.sol = trajectorySolve.solve();
   },
   /**
   * Container function for init, createArrays and createSplines functions.
   * Controlled by GUI.
   */
   run() {
+    // send a message to a worker to calculate trajectory
     this.calc();
 
     // transform the results into arrays used by the animation system (THREE.js)
@@ -783,7 +827,7 @@ const results = {
       vel[i] = Math.sqrt(u * u + v * v + w * w);
 
       // dynamic pressure (live outputs)
-      qInf[i] = traj.calcAtmoProperties(alt[i], vel[i], lander)[9];
+      qInf[i] = trajectoryOptions.calcAtmoProperties(alt[i], vel[i], lander)[9];
 
       // angle of attack
       const vInfGc = [u, v, w];
@@ -795,11 +839,11 @@ const results = {
       AoA[i] = Math.atan2(vZ, vX); // angle of attack
 
       // calculate temperature at nose (live outputs)
-      const densInf = traj.calcAtmoProperties(alt[i], vel[i], lander)[2];
+      const densInf = trajectoryOptions.calcAtmoProperties(alt[i], vel[i], lander)[2];
       const qConv = Mars.k * Math.sqrt(densInf / lander.rNose) * vel[i] * vel[i] * vel[i] / 10000; // Sutton-Graves relation for convective heat flux at stagnation point [W/cm2]
       let qRad;
       if (vel[i] > 6500) {
-        const TSv = numeric.spline(traj.TauberSuttonVelocityFunction.velocity, traj.TauberSuttonVelocityFunction.fv).at(vel[i]);
+        const TSv = numeric.spline(trajectoryOptions.TauberSuttonVelocityFunction.velocity, trajectoryOptions.TauberSuttonVelocityFunction.fv).at(vel[i]);
         qRad = Mars.C * (lander.rNose ** Mars.a) * (densInf ** Mars.b) * TSv; // Tauber-Sutton relation for radiative heat flux at stagnation point [W/cm2]
       } else {
         qRad = 0;
@@ -1117,7 +1161,7 @@ const livePlots = (function () {
         myPlot2.data.datasets.push({
           colourIndex, // changes before another plot is plotted on top
           label: 'AoA vs time',
-          data: [{ x: 0, y: traj.cond.alpha * 180 / Math.PI }],
+          data: [{ x: 0, y: trajectoryOptions.cond.alpha * 180 / Math.PI }],
           pointRadius: 0.8,
           get pointBackgroundColor() { return colours[this.colourIndex]; },
           pointHoverRadius: 1.5,
@@ -1157,9 +1201,9 @@ const liveOutputs = (function () {
   // initialize live outputs based on the results from trajectory module
   function init() {
     // defines initial parameters
-    const altitude = Math.round(traj.cond.h);
-    const velocity = Math.round(traj.cond.vInf);
-    const [, , , , , , , , , dynamicPress, mach, , ,] = traj.calcAtmoProperties(altitude, velocity, lander); // eslint-disable-line comma-spacing
+    const altitude = Math.round(trajectoryOptions.cond.h);
+    const velocity = Math.round(trajectoryOptions.cond.vInf);
+    const [, , , , , , , , , dynamicPress, mach, , ,] = trajectoryOptions.calcAtmoProperties(altitude, velocity, lander); // eslint-disable-line comma-spacing
 
     // initializes those values in the live outputs
     DOMel.alt.innerHTML = `${altitude} m`;
@@ -1182,7 +1226,7 @@ const liveOutputs = (function () {
     const velocity = Math.round(spline.tVSvel.at(time));
     const dynamicPress = Math.round(spline.tVSqInf.at(time) * 100) / 100;
     const tempNose = Math.round(spline.tVStempNose.at(time) * 100) / 100;
-    const mach = traj.calcAtmoProperties(altitude, velocity, lander)[10];
+    const mach = trajectoryOptions.calcAtmoProperties(altitude, velocity, lander)[10];
 
     // updates values in the DOM elements
     DOMel.alt.innerHTML = `${altitude} m`;
@@ -1226,7 +1270,7 @@ const liveOutputs = (function () {
       successMessage.style.visibility = 'visible'; // display the success message
 
       G.stopAnim(); // stops animations in the graphics module
-      G.setVelocityVector(traj.cond); // sets velocity vector length in the graphics module
+      G.setVelocityVector(trajectoryOptions.cond); // sets velocity vector length in the graphics module
     }
 
     // checks for conditions after crossing which one cannot deploy a parachute
@@ -1234,7 +1278,7 @@ const liveOutputs = (function () {
       failureMessage.style.visibility = 'visible'; // display the failure message
 
       G.stopAnim(); // stops animations in the graphics module
-      G.setVelocityVector(traj.cond); // sets velocity vector length in the graphics module
+      G.setVelocityVector(trajectoryOptions.cond); // sets velocity vector length in the graphics module
     }
   }
 
@@ -1248,7 +1292,6 @@ const liveOutputs = (function () {
 // ///////////////////////////////////
 // GRAPHICS AND ANIMATION (MODULE 6)//
 // ///////////////////////////////////
-
 
 const G = (function () {
   // initialize variables
@@ -1292,11 +1335,11 @@ const G = (function () {
    * Initializes the scene with all objects.
    *
    * @param {object} lander - contains geometry and lander properties
-   * @param {object} cond - contains initial conditions
+   * @param {object} trajectoryOptions.cond - contains initial trajectory conditions
    * @param {object} Mars - contains Mars data
    */
   function initScene() {
-    const { cond } = traj;
+    const { cond } = trajectoryOptions;
 
     // create Mars with planet frame
     createMars(lander, Mars, manager);
@@ -1653,7 +1696,7 @@ const G = (function () {
     mixer.addEventListener('finished', () => {
       clipAction.stop();
       isPlay = false;
-      setVelocityVector(traj.cond);
+      setVelocityVector(trajectoryOptions.cond);
     });
   }
 
@@ -1774,13 +1817,13 @@ const G = (function () {
  * Creates GUI with initial parameters.
  *
  * @param {object} lander - contains geometry and lander properties
- * @param {object} traj - contains atmosphere data
+ * @param {object} trajectoryOptions - contains atmosphere data
  */
 function setupGUI() {
   // initializes GUI and sets its width
   const gui = new dat.GUI({ width: 400 }); // specify width of gui
 
-  const { cond } = traj; // contains initial conditions
+  const { cond } = trajectoryOptions; // contains initial conditions, it is the same object, its just a pointer
 
   // add save menu, remember the initial state of objects before we implement any changes
   gui.remember(lander);
@@ -1832,7 +1875,7 @@ function setupGUI() {
   AoA.onChange(() => G.setBODYRotation(cond));
 
   // ATMOSPHERES
-  gui.add(traj, 'current', { Pathfinder: 'pathfinder', Curiosity: 'curiosity', Opportunity: 'opportunity', Phoenix: 'phoenix', Schiaparelli: 'schiaparelli', Spirit: 'spirit' }).name('Atmosphere');
+  gui.add(trajectoryOptions, 'current', { Pathfinder: 'pathfinder', Curiosity: 'curiosity', Opportunity: 'opportunity', Phoenix: 'phoenix', Schiaparelli: 'schiaparelli', Spirit: 'spirit' }).name('Atmosphere');
 
   // TRAJECTORY function - save function
   const save = gui.add(results, 'run').name('CALCULATE');
