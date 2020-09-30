@@ -126,7 +126,7 @@ div#instruction li, div#instruction p {
 
 /*the success and failure messages as well as the notification for the successful calculation of the results
 -----------------------------------------------------------------------------*/
-div#successMessage, div#failureMessage, div#trajCalculated {
+div#successMessage, div#failureMessage, div#trajCalculated, div#calcnotpressed {
   position: absolute;
 
   bottom: 11%;
@@ -144,7 +144,7 @@ div#successMessage, div#failureMessage, div#trajCalculated {
   visibility: hidden; /* hides this element by default */
 }
 
-div#successMessage p, div#failureMessage p, div#trajCalculated p {
+div#successMessage p, div#failureMessage p, div#trajCalculated p, div#calcnotpressed p {
   display: block;
   text-align: center;
   padding: 0;

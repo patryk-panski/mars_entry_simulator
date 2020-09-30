@@ -1,7 +1,5 @@
 /* eslint-disable no-unused-vars */
 // setupGUI - turn it into a module and delete the above line
-/* eslint-disable no-alert */
-// eventually turn alerts into nicer interface
 /** Simulation of a Mars lander.
  *
  *
@@ -1352,7 +1350,11 @@ const G = (function () {
   // play animation
   function playAnim() {
     // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) { alert("Press 'SAVE' button to save your current inputs."); return; }
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+      const calcnotpressed = document.querySelector('#calcnotpressed');
+      calcnotpressed.style.visibility = 'visible';
+      return;
+    }
 
     if (!isPlay) {
       clipAction.play();
@@ -1367,7 +1369,11 @@ const G = (function () {
   // play animation 5 times faster
   function playAnimX5() {
     // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) { alert("Press 'SAVE' button to save your current inputs."); return; }
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+      const calcnotpressed = document.querySelector('#calcnotpressed');
+      calcnotpressed.style.visibility = 'visible';
+      return;
+    }
 
     if (!isPlay) {
       clipAction.play();
@@ -1382,7 +1388,11 @@ const G = (function () {
   // pause running animation
   function pauseAnim() {
     // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) { alert("Press 'SAVE' button to save your current inputs."); return; }
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+      const calcnotpressed = document.querySelector('#calcnotpressed');
+      calcnotpressed.style.visibility = 'visible';
+      return;
+    }
 
     clipAction.paused = true;
     isPlay = false;
@@ -1391,7 +1401,11 @@ const G = (function () {
   // stops running animation
   function stopAnim() {
     // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) { alert("Press 'SAVE' button to save your current inputs."); return; }
+    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+      const calcnotpressed = document.querySelector('#calcnotpressed');
+      calcnotpressed.style.visibility = 'visible';
+      return;
+    }
 
     clipAction.stop(); // this method also calls reset()
     isPlay = false;
