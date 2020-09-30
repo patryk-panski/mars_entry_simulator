@@ -439,8 +439,6 @@ const results = {
       data1,
       data2,
     });
-
-    // show a notification to make a user wait for the results (TODO)
   },
   /**
   * Transforms initial sol object from ODE solver into separate arrays.
@@ -949,32 +947,44 @@ const liveOutputs = (function () {
 // ///////////////////////////////////
 
 const G = (function () {
-  // initialize variables
+  // initializes main variables needed to create 3D graphics
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+  // creates an object for keeping track of time
   const clock = new THREE.Clock();
+
+  // creates and docks an object for monitoring performance
   const stats = new Stats();
+  document.body.appendChild(stats.dom);
+
+  // creates a loading manager (handles and keeps track of loaded and pending data)
   const manager = new THREE.LoadingManager();
-  const progressBarElem = document.querySelector('#loading .progressbar'); // grab a progress bar element from DOM
-  manager.onProgress = (urlOfLastItemLoaded, itemsLoaded, itemsTotal) => { // define loading progress behaviour
+  const progressBarElem = document.querySelector('#loading .progressbar'); // grabs a progress bar element from DOM
+  manager.onProgress = (url, itemsLoaded, itemsTotal) => { // defines behaviour for the loading page
     const progress = itemsLoaded / itemsTotal;
     progressBarElem.style.transform = `scaleX(${progress})`;
   };
 
-
+  // creates trackball controlls
   const controls = new THREE.TrackballControls(camera, renderer.domElement);
-  const materials = loadTextures(); // create materials with textures for mars object
 
+  // creates materials with textures for mars object, this dictates the duration of the loading page
+  const marsMaterials = loadMarsTextures();
+
+  // define animation variables
   let mixer; let clipAction; let isPlay = false;
 
   /**
    * Loads Mars surface images using THREE.js Texture Loader
    *
+   * @return {array} - an array of materials used by the Mars object
    */
-  function loadTextures() {
-    const loader = new THREE.TextureLoader(manager); // loader for textures
-
+  function loadMarsTextures() {
+    // creates a loader for textures
+    const loader = new THREE.TextureLoader(manager);
+    // returns an array of materials for the Mars
     return [
       new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars0.png') }),
       new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars1.png') }),
@@ -991,38 +1001,35 @@ const G = (function () {
    *
    * @param {object} lander - contains geometry and lander properties
    * @param {object} trajectoryOptions.cond - contains initial trajectory conditions
-   * @param {object} Mars - contains Mars data
+   * @param {object} Mars - contains Mars physics constants
    */
   function initScene() {
+    // grabs parameters of the trajectory
     const { cond } = trajectoryOptions;
 
-    // create Mars with planet frame
-    createMars(lander, Mars, manager);
+    // creates Mars with a planet frame
+    createMars(lander, Mars);
 
-    // create lander with body and NED frame
+    // creates a lander with body and NED frames
     createLander(lander, cond);
 
-    // get NEDframe
+    // grabs a NED frame
     const NEDframe = scene.getObjectByName('NED');
 
-    // create velocity vector
+    // creates a velocity vector
     createVelVect(NEDframe, cond);
 
-    // config renderer
+    // configures renderer
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.querySelector('#webgl').appendChild(renderer.domElement);
 
-    // config camera
+    // configures camera
     camera.position.copy(scene.children[1].position).add(new THREE.Vector3(-2, -2, 0.5));
 
-    // config controls
+    // configures controls
     controls.rotateSpeed = 0.5;
     controls.noPan = true;
     controls.target = NEDframe.position;
-    controls.update();
-
-    // config stats
-    document.body.appendChild(stats.dom);
 
     // config resizing and full screen
     THREEx.WindowResize(renderer, camera);
@@ -1030,7 +1037,27 @@ const G = (function () {
   }
 
   /**
-  * Creates Mars mesh with PLANET (inertial) frame.
+  * Creates an axes helper representing frame of reference.
+  * Used in createMars and createLander functions.
+  *
+  * @param {string} name name property assigned to the group object
+  * @param {number} axesLength length of the coordinate system axis
+  *
+  * @return {object} THREE.js group object representing the frame of reference.
+  */
+  function createAxes(name, axesLength) {
+    // creates a new group for the frame
+    const frame = new THREE.Group();
+    // assigns a name to the group
+    frame.name = name;
+    // creates axes and adds it to the group
+    frame.add(new THREE.AxesHelper(axesLength));
+
+    return frame;
+  }
+
+  /**
+  * Creates Mars mesh with a PLANET (inertial) frame.
   * Uses NASA Mars maps as textures for the mesh.
   *
   * @param {object} lander - contains scale
@@ -1038,34 +1065,35 @@ const G = (function () {
   *
   * @return {object} - THREE.js object3D representing Mars
   */
-  function createMars(lander, Mars, manager) {
-    // get scale and radius of the Mars
+  function createMars(lander, Mars) {
+    // grabs scale and radius of the Mars
     const { scale } = lander.mesh;
     const radius = Mars.r / scale;
 
-    // create PLANET FRAME coordinate system
-    const PLANETframe = createFrame('PLANET', radius + 10);
+    // creates Mars coordinate system
+    const marsFrame = createAxes('PLANET', radius + 10);
 
-    // create all 8 sphere parts
-    const mars = new THREE.Group(); // container for all sphere parts
-    let material; let geometry; let mesh;
+    // creates all 8 sphere parts
+    const mars = new THREE.Group(); // creates a container for all sphere parts
+    let material; let geometry; let mesh; // define variables used for each part
 
     for (let i = 0; i < 8; i++) {
-      geometry = new THREE.SphereGeometry(radius, 64, 64, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
-      material = materials[i];
+      geometry = new THREE.SphereGeometry(radius, 32, 32, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
+      material = marsMaterials[i];
       mesh = new THREE.Mesh(geometry, material);
       mars.add(mesh);
     }
-    PLANETframe.add(mars);
+    // add mars group to the planet frame
+    marsFrame.add(mars);
 
     // to apply following matrix directly, also the object (mars + coordinate system) is static - no need to recalculate matrix
-    PLANETframe.traverse((obj) => { obj.matrixAutoUpdate = false; });
+    marsFrame.traverse((obj) => { obj.matrixAutoUpdate = false; });
 
     // transformation of Mars mesh to match planet frame coordinate system
     mars.matrix.makeRotationFromEuler(new THREE.Euler(Math.PI / 2, Math.PI, 0));
 
     // add mars to the scene
-    scene.add(PLANETframe);
+    scene.add(marsFrame);
   }
 
   /**
@@ -1085,10 +1113,10 @@ const G = (function () {
     const { lat, lon, r, e0, e1, e2, e3 } = cond;
 
     // create mesh group for BODY FRAME
-    const BODYframe = createFrame('BODY', 0.15);
+    const BODYframe = createAxes('BODY', 0.15);
 
     // create mesh group for NED FRAME
-    const NEDframe = createFrame('NED', 25);
+    const NEDframe = createAxes('NED', 25);
 
     // create vehicle geometry, material and mesh
     const points = [];
@@ -1225,23 +1253,6 @@ const G = (function () {
 
     // set quaternions
     BODYframe.quaternion.set(e1, e2, e3, e0); // (x, y, z, w)
-  }
-
-  /**
-  * Creates an axis helper representing frame of reference.
-  * Used in createMars and createLander functions.
-  *
-  * @param {string} name name property assigned to the group object
-  * @param {number} axesLength length of the coordinate system axis
-  *
-  * @return {object} THREE.js group object representing FoR.
-  */
-  function createFrame(name, axesLength) {
-    const frame = new THREE.Group(); // create a new group for the frame
-    frame.name = name; // assign a name to the group
-    frame.add(new THREE.AxisHelper(axesLength)); // create axes
-
-    return frame;
   }
 
   /**
@@ -1436,7 +1447,7 @@ const G = (function () {
    * Renders the scene and updates changing variables in the scene.
    */
   function updateView() {
-    renderer.render(scene, camera); // update graphics
+    renderer.render(scene, camera); // updates graphics
 
     const delta = clock.getDelta(); // get time passed from last callback
 
@@ -1452,11 +1463,11 @@ const G = (function () {
       mixer.update(delta);
     }
 
-    controls.update(); // update camera controls
-    stats.update(); // update performance statistics
+    controls.update(); // updates camera controls
+    stats.update(); // updates the performance monitor
   }
 
-  // return API
+  // return public API
   return {
     manager,
     initScene,
