@@ -952,6 +952,11 @@ const G = (function () {
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
 
+  // sets the light in the scene
+  const light = new THREE.DirectionalLight(0xcccccc, 1);
+  light.position.set(0, 0, 1);
+  scene.add(light);
+
   // creates an object for keeping track of time
   const clock = new THREE.Clock();
 
@@ -971,7 +976,7 @@ const G = (function () {
   const controls = new THREE.TrackballControls(camera, renderer.domElement);
 
   // creates materials with textures for mars object, this dictates the duration of the loading page
-  const marsMaterials = loadMarsTextures();
+  const marsMaterials = buildMarsMaterials();
 
   // define animation variables
   let mixer; let clipAction; let isPlay = false;
@@ -981,20 +986,24 @@ const G = (function () {
    *
    * @return {array} - an array of materials used by the Mars object
    */
-  function loadMarsTextures() {
+  function buildMarsMaterials() {
     // creates a loader for textures
     const loader = new THREE.TextureLoader(manager);
+    // initializes an array for Mars materials
+    const materialsArray = [];
+    // defines the scale for the bump map (perceived depth of the surface)
+    const bumpScale = 1;
+
+    for (let i = 0; i < 8; i++) {
+      materialsArray[i] = new THREE.MeshPhongMaterial({
+        map: loader.load(`images/color/mars${i}.png`),
+        bumpMap: loader.load(`images/bump/mars${i}.png`),
+        bumpScale,
+      });
+    }
+
     // returns an array of materials for the Mars
-    return [
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars0.png') }),
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars1.png') }),
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars2.png') }),
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars3.png') }),
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars4.png') }),
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars5.png') }),
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars6.png') }),
-      new THREE.MeshBasicMaterial({ map: loader.load('images/color/mars7.png') }),
-    ];
+    return materialsArray;
   }
   /**
    * Initializes the scene with all objects.
@@ -1024,7 +1033,7 @@ const G = (function () {
     document.querySelector('#webgl').appendChild(renderer.domElement);
 
     // configures camera
-    camera.position.copy(scene.children[1].position).add(new THREE.Vector3(-2, -2, 0.5));
+    camera.position.copy(scene.getObjectByName('NED').position).add(new THREE.Vector3(-2, -2, 0.5));
 
     // configures controls
     controls.rotateSpeed = 0.5;
@@ -1080,6 +1089,10 @@ const G = (function () {
     for (let i = 0; i < 8; i++) {
       geometry = new THREE.SphereGeometry(radius, 32, 32, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
       material = marsMaterials[i];
+      // makes the surface of the Mars matt
+      material.specular = new THREE.Color('black');
+      material.shininess = 0;
+      // creates a mesh
       mesh = new THREE.Mesh(geometry, material);
       mars.add(mesh);
     }
