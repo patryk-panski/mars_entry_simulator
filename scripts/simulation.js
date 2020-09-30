@@ -954,7 +954,7 @@ const G = (function () {
 
   // sets the light in the scene
   const light = new THREE.DirectionalLight(0xcccccc, 1);
-  light.position.set(0, 0, 1);
+  light.position.set(1, 1, 5);
   scene.add(light);
 
   // creates an object for keeping track of time
@@ -975,14 +975,15 @@ const G = (function () {
   // creates trackball controlls
   const controls = new THREE.TrackballControls(camera, renderer.domElement);
 
-  // creates materials with textures for mars object, this dictates the duration of the loading page
+  // creates materials with textures for mars object and the sky, this dictates the duration of the loading page
   const marsMaterials = buildMarsMaterials();
+  const skyMaterial = buildSkyMaterial();
 
   // define animation variables
   let mixer; let clipAction; let isPlay = false;
 
   /**
-   * Loads Mars surface images using THREE.js Texture Loader
+   * Loads Mars surface images using THREE.js Texture Loader and creates a material
    *
    * @return {array} - an array of materials used by the Mars object
    */
@@ -992,7 +993,7 @@ const G = (function () {
     // initializes an array for Mars materials
     const materialsArray = [];
     // defines the scale for the bump map (perceived depth of the surface)
-    const bumpScale = 1;
+    const bumpScale = 0.5;
 
     for (let i = 0; i < 8; i++) {
       materialsArray[i] = new THREE.MeshPhongMaterial({
@@ -1006,6 +1007,28 @@ const G = (function () {
     return materialsArray;
   }
   /**
+   * Loads starry sky image using THREE.js Texture Loader and creates a material
+   *
+   * @return {object} - an object respresenting a material used for the sky
+   */
+  function buildSkyMaterial() {
+    // creates a loader for textures
+    const loader = new THREE.TextureLoader(manager);
+    // returns an array of materials for the Mars
+    return new THREE.MeshBasicMaterial({ map: loader.load('images/stars.jpg') });
+  }
+  /**
+   * Creates a starry sky and adds it to the scene
+   */
+  function createStarrySky() {
+    const starsGeometry = new THREE.SphereGeometry(200, 32, 32);
+    const starsMaterial = skyMaterial;
+    starsMaterial.side = THREE.BackSide;
+    const starsMesh = new THREE.Mesh(starsGeometry, starsMaterial);
+
+    scene.add(starsMesh);
+  }
+  /**
    * Initializes the scene with all objects.
    *
    * @param {object} lander - contains geometry and lander properties
@@ -1015,6 +1038,9 @@ const G = (function () {
   function initScene() {
     // grabs parameters of the trajectory
     const { cond } = trajectoryOptions;
+
+    // creates a starry sky
+    createStarrySky();
 
     // creates Mars with a planet frame
     createMars(lander, Mars);
