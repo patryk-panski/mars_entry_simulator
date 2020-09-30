@@ -386,6 +386,10 @@ worker.addEventListener('message', (event) => {
   liveOutputs.init();
   G.defineAnim(results);
 
+  // hide please wait notification
+  const notif = document.querySelector('#pleasewait');
+  notif.style.visibility = 'hidden';
+
   // display notification to notify the user that the trajectory has been calculated
   const trajCalculated = document.querySelector('#trajCalculated');
   trajCalculated.style.visibility = 'visible';
@@ -402,6 +406,10 @@ const results = {
   * This runs when the button "Calculate" is pressed
   */
   run() {
+    // show "please wait" notification
+    const notif = document.querySelector('#pleasewait');
+    notif.style.visibility = 'visible';
+
     // define data that will be sent to a worker
     // trajectory data
     const data1 = {

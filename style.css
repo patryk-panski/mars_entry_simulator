@@ -123,10 +123,46 @@ div#instruction li, div#instruction p {
 }
 .flex-item1 {}
 .flex-item2 {}
+  
+/* please wait ripple 
+--------------------------------------------------------------------------------*/
+.lds-ripple {
+  display: inline-block;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin-right: 5px;
+}
+.lds-ripple div {
+  position: absolute;
+  border: 5px solid #fff;
+  opacity: 1;
+  border-radius: 50%;
+  animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.lds-ripple div:nth-child(2) {
+  animation-delay: -0.5s;
+}
+@keyframes lds-ripple {
+  0% {
+    top: 15px;
+    left: 15px;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    top: 0px;
+    left: 0px;
+    width: 30px;
+    height: 30px;
+    opacity: 0;
+  }
+}
 
 /*the success and failure messages as well as the notification for the successful calculation of the results
 -----------------------------------------------------------------------------*/
-div#successMessage, div#failureMessage, div#trajCalculated, div#calcnotpressed {
+div#successMessage, div#failureMessage, div#trajCalculated, div#calcnotpressed, div#pleasewait {
   position: absolute;
 
   bottom: 11%;
@@ -144,7 +180,7 @@ div#successMessage, div#failureMessage, div#trajCalculated, div#calcnotpressed {
   visibility: hidden; /* hides this element by default */
 }
 
-div#successMessage p, div#failureMessage p, div#trajCalculated p, div#calcnotpressed p {
+div#successMessage p, div#failureMessage p, div#trajCalculated p, div#calcnotpressed p, div#pleasewait p {
   display: block;
   text-align: center;
   padding: 0;
