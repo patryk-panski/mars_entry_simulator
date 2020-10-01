@@ -923,7 +923,7 @@ const liveOutputs = (function () {
       successMessage.style.visibility = 'visible'; // display the success message
 
       G.stopAnim(); // stops animations in the graphics module
-      G.setVelocityVector(trajectoryOptions.cond); // sets velocity vector length in the graphics module
+      G.Velocity.update('GUI'); // sets velocity vector length in the graphics module
     }
 
     // checks for conditions after crossing which one cannot deploy a parachute
@@ -931,7 +931,7 @@ const liveOutputs = (function () {
       failureMessage.style.visibility = 'visible'; // display the failure message
 
       G.stopAnim(); // stops animations in the graphics module
-      G.setVelocityVector(trajectoryOptions.cond); // sets velocity vector length in the graphics module
+      G.Velocity.update('GUI'); // sets velocity vector length in the graphics module
     }
   }
 
@@ -951,6 +951,13 @@ const G = (function () {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
+  // configures renderer
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.querySelector('#webgl').appendChild(renderer.domElement);
+
+  // config resizing and full screen
+  THREEx.WindowResize(renderer, camera);
+  THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
 
   // sets the light in the scene
   const light = new THREE.DirectionalLight(0xcccccc, 1);
@@ -1002,6 +1009,7 @@ const G = (function () {
     texture.dispose();
     material.dispose();
   })(manager);
+
   /**
    * Creates a Mars object in the scene
    *
@@ -1204,42 +1212,95 @@ const G = (function () {
       update,
     };
   })(manager);
-
+  LanderObj.init();
   /**
-   * Initializes the scene with all objects.
+   * Creates a velocity object in the scene and defines its methods
+   *
+   */
+  const Velocity = (function () {
+    // define velocity coordinates
+    let { u, v, w, vInf } = trajectoryOptions.cond;
+
+    /**
+    * Creates initial velocity vector.
+    */
+    function init() {
+      // grabs a NED frame from the scene
+      const NEDframe = scene.getObjectByName('NED');
+
+      // define direction, origin and length of the velocity vector
+      const dir = new THREE.Vector3(u, v, w);
+      dir.normalize(); // has to be normalized
+      const origin = new THREE.Vector3(0, 0, 0);
+      const length = vInf / 100000;
+
+      // create velocity vector and assign a name to it
+      const arrowHelper = new THREE.ArrowHelper(dir, origin, length, 0xffffff, 0.006, 0.002);
+      arrowHelper.name = 'VELOCITY';
+
+      // add the vector to NEDframe
+      NEDframe.add(arrowHelper);
+    }
+
+    function update(type, time) {
+      // get reference to the velocity object
+      const velVector = scene.getObjectByName('VELOCITY');
+
+      switch (type) {
+        case 'GUI': {
+          // update values of velocity components
+          ({ u, v, w, vInf } = trajectoryOptions.cond);
+          // calculate new direction and length of the velocity vector
+          const dir = new THREE.Vector3(u, v, w);
+          dir.normalize();
+          const length = vInf / 100000;
+          // set new direction and length of the vector in the scene
+          velVector.setDirection(dir);
+          velVector.setLength(length, 0.006, 0.003);
+          break;
+        }
+        case 'animation': {
+          // grabs spline results for the update in the render loop
+          const { spline } = results;
+          // interpolate values in the results arrays to find current value
+          const length = spline.tVSvel.at(time) / 100000;
+          const uA = spline.tVSxVel.at(time);
+          const vA = spline.tVSyVel.at(time);
+          const wA = spline.tVSzVel.at(time);
+          // make changes to length and direction of the current velocity vector in the scene
+          velVector.setLength(length, 0.006, 0.003);
+          velVector.setDirection(new THREE.Vector3(uA, vA, wA));
+          break;
+        }
+        default:
+      }
+    }
+
+
+    return {
+      init,
+      update,
+    };
+  })();
+  Velocity.init();
+  /**
+   * Configures some settings dependent on the NED frame.
    *
    * @param {object} lander - contains geometry and lander properties
    * @param {object} trajectoryOptions.cond - contains initial trajectory conditions
    * @param {object} Mars - contains Mars physics constants
    */
-  function initScene() {
-    // grabs parameters of the trajectory
-    const { cond } = trajectoryOptions;
-
-    // creates a lander with body and NED frames
-    LanderObj.init();
-
+  function config() {
     // grabs a NED frame
     const NEDframe = scene.getObjectByName('NED');
 
-    // creates a velocity vector
-    createVelVect(NEDframe, cond);
-
-    // configures renderer
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.querySelector('#webgl').appendChild(renderer.domElement);
-
     // configures camera
-    camera.position.copy(scene.getObjectByName('NED').position).add(new THREE.Vector3(-2, -2, 0.5));
+    camera.position.copy(NEDframe.position).add(new THREE.Vector3(-2, -2, 0.5));
 
     // configures controls
     controls.rotateSpeed = 0.5;
     controls.noPan = true;
     controls.target = NEDframe.position;
-
-    // config resizing and full screen
-    THREEx.WindowResize(renderer, camera);
-    THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
   }
 
   /**
@@ -1261,78 +1322,6 @@ const G = (function () {
 
     return frame;
   }
-
-  /**
-  * Creates initial velocity vector.
-  *
-  * @param {object} NEDframe - THREE.js parent object for the arrow helper
-  * @param {object} cond - contains real velocity coordinates
-  *
-  * @return {object} THREE.js arrow helper object representing velocity vector
-  */
-  function createVelVect(NEDframe, cond) {
-    // scale for velocity vector
-    // const scale = 100000; //UNUSED
-
-    // define velocity coordinates
-    const { u, v, w, vInf } = cond;
-
-    // define direction, origin and length of the velocity vector
-    const dir = new THREE.Vector3(u, v, w);
-    dir.normalize(); // has to be normalized
-    const origin = new THREE.Vector3(0, 0, 0);
-    const length = vInf / 100000;
-
-    // create velocity vector and assign a name to it
-    const arrowHelper = new THREE.ArrowHelper(dir, origin, length, 0xffffff, 0.006, 0.002);
-    arrowHelper.name = 'VELOCITY';
-
-    // add the vector to NEDframe
-    NEDframe.add(arrowHelper);
-  }
-
-  /**
-   * Updates velocity vector in the scene based on the GUI input.
-   *
-   * @param {object} cond - contains updated velocity values
-   */
-  function setVelocityVector(cond) {
-    // get reference to the velocity object
-    const velVector = scene.getObjectByName('VELOCITY');
-
-    // components of velocity in NED directions
-    const { u, v, w, vInf } = cond;
-
-    // calculate new direction and length of the velocity vector
-    const dir = new THREE.Vector3(u, v, w);
-    dir.normalize();
-    const length = vInf / 100000;
-
-    // set new direction and length of the vector in the scene
-    velVector.setDirection(dir);
-    velVector.setLength(length, 0.006, 0.003);
-  }
-
-  /**
-   * Updates velocity vector in the render loop.
-   *
-   * @param {number} time - real simulation time
-   * @param {object} spline - splines from result object
-   */
-  function updateVelVect(time, { spline }) {
-    const velVector = scene.getObjectByName('VELOCITY');
-
-    // interpolate values in the results arrays to find current value
-    const length = spline.tVSvel.at(time) / 100000;
-    const u = spline.tVSxVel.at(time);
-    const v = spline.tVSyVel.at(time);
-    const w = spline.tVSzVel.at(time);
-
-    // make changes to length and direction of the current velocity vector in the scene
-    velVector.setLength(length, 0.006, 0.003);
-    velVector.setDirection(new THREE.Vector3(u, v, w));
-  }
-
 
   // ///// animation system
 
@@ -1369,7 +1358,7 @@ const G = (function () {
     mixer.addEventListener('finished', () => {
       clipAction.stop();
       isPlay = false;
-      setVelocityVector(trajectoryOptions.cond);
+      G.Velocity.update('GUI');
     });
   }
 
@@ -1463,7 +1452,7 @@ const G = (function () {
       // TODO create an array with current parameters and pass them to all update functions instead of calculating them for each of them separately
       // if animation is not playing stop updating live outputs
       if (isPlay) {
-        updateVelVect(currentTime, results); // updates velocity vector
+        Velocity.update('animation', currentTime); // updates velocity vector
         livePlots.update(currentTime, results); // updates plots
         liveOutputs.update(currentTime, results); // updates altitude and velocity
       }
@@ -1481,9 +1470,9 @@ const G = (function () {
     manager,
     MarsObj,
     LanderObj,
-    initScene,
-    updateVelVect,
-    setVelocityVector,
+    Velocity,
+
+    config,
 
     render,
     setTime,
@@ -1522,7 +1511,7 @@ function setupGUI() {
   gui.add(lander, 'mass', 10, 50000).name('Mass [kg]');
   // VELOCITY of the heatshield
   const vel = gui.add(cond, 'vInf', 1000, 10000).name('Velocity [m/s]');
-  vel.onChange(() => { G.setVelocityVector(cond); liveOutputs.init(); });
+  vel.onChange(() => { G.Velocity.update('GUI'); liveOutputs.init(); });
 
   // GEOMETRY of the heatshield
   let folder = gui.addFolder('GEOMETRY');
@@ -1555,10 +1544,10 @@ function setupGUI() {
   folder = gui.addFolder('ANGLES');
   // flight path angle
   const FPA = folder.add(cond, 'FPADeg', 0, 90).name('FPA [deg]');
-  FPA.onChange(() => { G.setVelocityVector(cond); G.LanderObj.update('orientation'); });
+  FPA.onChange(() => { G.Velocity.update('GUI'); G.LanderObj.update('orientation'); });
   // azimuth
   const azi = folder.add(cond, 'aziDeg', -180, 180).name('Azimuth [deg]');
-  azi.onChange(() => { G.setVelocityVector(cond); G.LanderObj.update('orientation'); });
+  azi.onChange(() => { G.Velocity.update('GUI'); G.LanderObj.update('orientation'); });
   // angle of attack
   const AoA = folder.add(cond, 'alphaDeg', -80, 80).name('Angle of Attack [deg]');
   AoA.onChange(() => G.LanderObj.update('orientation'));
@@ -1577,7 +1566,7 @@ function setupGUI() {
   folder.add(G, 'playAnimX5').name('Play x5');
   // stop
   const stop = folder.add(G, 'stopAnim').name('Stop');
-  stop.onFinishChange(() => G.setVelocityVector(cond));
+  stop.onFinishChange(() => G.Velocity.update('GUI'));
   // pause
   folder.add(G, 'pauseAnim').name('Pause');
 }
