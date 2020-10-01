@@ -42,7 +42,7 @@ const lander = {
     x: null, // x, y, z matrices defining mesh coordinates used for physics calculation
     y: null,
     z: null,
-    xLath: null, // xLath and rLath defining the curve used in geometry module for the mesh
+    xLath: null, // xLath and rLath defining the curve used in graphics module for the mesh
     rLath: null,
   },
   /**
@@ -975,26 +975,49 @@ const G = (function () {
   // creates trackball controlls
   const controls = new THREE.TrackballControls(camera, renderer.domElement);
 
-  // creates materials with textures for mars object and the sky, this dictates the duration of the loading page
-  const marsMaterials = buildMarsMaterials();
-  const skyMaterial = buildSkyMaterial();
-
   // define animation variables
   let mixer; let clipAction; let isPlay = false;
 
   /**
-   * Loads Mars surface images using THREE.js Texture Loader and creates a material
+   * Creates a starry sky in the scene
    *
-   * @return {array} - an array of materials used by the Mars object
    */
-  function buildMarsMaterials() {
+  const SkyObj = (function (loadingManager) {
+    // creates a loader for textures with a manager
+    const loader = new THREE.TextureLoader(loadingManager);
+    // creates geometry for the Sky, texture and material
+    const geometry = new THREE.SphereGeometry(200, 32, 32);
+    const texture = loader.load('images/stars.jpg');
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    material.side = THREE.BackSide;
+    // creates a mesh
+    const mesh = new THREE.Mesh(geometry, material);
+    // add the mesh to the scene
+    scene.add(mesh);
+
+    // Three.js Cleanup
+    geometry.dispose();
+    texture.dispose();
+    material.dispose();
+  })(manager);
+  /**
+   * Creates a Mars object in the scene
+   *
+   */
+  const MarsObj = (function (loadingManager) {
+    // grabs scale and radius of the Mars
+    const { scale } = lander.mesh;
+    const radius = Mars.r / scale;
+    // creates Mars coordinate system
+    const marsFrame = createAxes('PLANET', radius + 10);
+
+    // MATERIAL //
+    // defines the scale for the bump map (perceived depth of the surface)
+    const bumpScale = 0.5;
     // creates a loader for textures
     const loader = new THREE.TextureLoader(manager);
     // initializes an array for Mars materials
     const materialsArray = [];
-    // defines the scale for the bump map (perceived depth of the surface)
-    const bumpScale = 0.5;
-
     for (let i = 0; i < 8; i++) {
       materialsArray[i] = new THREE.MeshPhongMaterial({
         map: loader.load(`images/color/mars${i}.png`),
@@ -1003,31 +1026,40 @@ const G = (function () {
       });
     }
 
-    // returns an array of materials for the Mars
-    return materialsArray;
-  }
-  /**
-   * Loads starry sky image using THREE.js Texture Loader and creates a material
-   *
-   * @return {object} - an object respresenting a material used for the sky
-   */
-  function buildSkyMaterial() {
-    // creates a loader for textures
-    const loader = new THREE.TextureLoader(manager);
-    // returns an array of materials for the Mars
-    return new THREE.MeshBasicMaterial({ map: loader.load('images/stars.jpg') });
-  }
-  /**
-   * Creates a starry sky and adds it to the scene
-   */
-  function createStarrySky() {
-    const starsGeometry = new THREE.SphereGeometry(200, 32, 32);
-    const starsMaterial = skyMaterial;
-    starsMaterial.side = THREE.BackSide;
-    const starsMesh = new THREE.Mesh(starsGeometry, starsMaterial);
+    // GEOMETRY //
+    // creates all 8 sphere parts
+    const mars = new THREE.Group(); // creates a container for all sphere parts
+    let material; let geometry; let mesh; // define variables used for each part
 
-    scene.add(starsMesh);
-  }
+    for (let i = 0; i < 8; i++) {
+      geometry = new THREE.SphereGeometry(radius, 32, 32, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
+      material = materialsArray[i];
+      // makes the surface of the Mars matt
+      material.specular = new THREE.Color('black');
+      material.shininess = 0;
+      // creates a mesh
+      mesh = new THREE.Mesh(geometry, material);
+      mars.add(mesh);
+      // THREE.js Cleanup
+      materialsArray[i].dispose();
+      material.dispose();
+      geometry.dispose();
+    }
+
+    // TRANSFORMATIONS //
+    // add mars group to the planet frame
+    marsFrame.add(mars);
+    // to apply following matrix directly, also the object (mars + coordinate system) is static - no need to recalculate matrix
+    marsFrame.traverse((obj) => { obj.matrixAutoUpdate = false; });
+    // transformation of Mars mesh to match planet frame coordinate system
+    mars.matrix.makeRotationFromEuler(new THREE.Euler(Math.PI / 2, Math.PI, 0));
+    // add mars to the scene
+    scene.add(marsFrame);
+
+    // return marsFrame objects
+    return marsFrame;
+  })(manager);
+
   /**
    * Initializes the scene with all objects.
    *
@@ -1038,12 +1070,6 @@ const G = (function () {
   function initScene() {
     // grabs parameters of the trajectory
     const { cond } = trajectoryOptions;
-
-    // creates a starry sky
-    createStarrySky();
-
-    // creates Mars with a planet frame
-    createMars(lander, Mars);
 
     // creates a lander with body and NED frames
     createLander(lander, cond);
@@ -1091,49 +1117,6 @@ const G = (function () {
     return frame;
   }
 
-  /**
-  * Creates Mars mesh with a PLANET (inertial) frame.
-  * Uses NASA Mars maps as textures for the mesh.
-  *
-  * @param {object} lander - contains scale
-  * @param {object} Mars - contains Mars radius
-  *
-  * @return {object} - THREE.js object3D representing Mars
-  */
-  function createMars(lander, Mars) {
-    // grabs scale and radius of the Mars
-    const { scale } = lander.mesh;
-    const radius = Mars.r / scale;
-
-    // creates Mars coordinate system
-    const marsFrame = createAxes('PLANET', radius + 10);
-
-    // creates all 8 sphere parts
-    const mars = new THREE.Group(); // creates a container for all sphere parts
-    let material; let geometry; let mesh; // define variables used for each part
-
-    for (let i = 0; i < 8; i++) {
-      geometry = new THREE.SphereGeometry(radius, 32, 32, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
-      material = marsMaterials[i];
-      // makes the surface of the Mars matt
-      material.specular = new THREE.Color('black');
-      material.shininess = 0;
-      // creates a mesh
-      mesh = new THREE.Mesh(geometry, material);
-      mars.add(mesh);
-    }
-    // add mars group to the planet frame
-    marsFrame.add(mars);
-
-    // to apply following matrix directly, also the object (mars + coordinate system) is static - no need to recalculate matrix
-    marsFrame.traverse((obj) => { obj.matrixAutoUpdate = false; });
-
-    // transformation of Mars mesh to match planet frame coordinate system
-    mars.matrix.makeRotationFromEuler(new THREE.Euler(Math.PI / 2, Math.PI, 0));
-
-    // add mars to the scene
-    scene.add(marsFrame);
-  }
 
   /**
   * Creates a lander mesh in the initial position and orientation.
@@ -1145,27 +1128,35 @@ const G = (function () {
   * @param {object} - THREE.js object3D representing lander
   */
   function createLander(lander, cond) {
-    // define scales and the curve
+    // defines scaling and the curve for the lander
     const { scale, landerMagnification, rLath, xLath } = lander.mesh;
 
-    // define initial conditions
+    // defines position and orientation in space
     const { lat, lon, r, e0, e1, e2, e3 } = cond;
 
-    // create mesh group for BODY FRAME
+    // creates mesh group for BODY FRAME with an axes helper
     const BODYframe = createAxes('BODY', 0.15);
 
-    // create mesh group for NED FRAME
+    // creates mesh group for NED FRAME with an axes helper
     const NEDframe = createAxes('NED', 25);
 
-    // create vehicle geometry, material and mesh
+    // creates vehicle geometry, material and mesh
     const points = [];
 
     for (let i = 0; i < xLath.length; i++) {
       points.push(new THREE.Vector2(rLath[i] / scale * landerMagnification, xLath[i] / scale * landerMagnification));
     }
 
+    // const loader = new THREE.TextureLoader();
+
     const geometry = new THREE.LatheGeometry(points, rLath.length - 1); // a shape generated by spinning a line
-    const material = new THREE.MeshBasicMaterial({ color: 0x708090, wireframe: true, transparent: true, side: THREE.DoubleSide });
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x708090,
+      wireframe: true,
+      transparent: true,
+      side: THREE.DoubleSide,
+      // map: loader.load('images/carbon-fiber-texture.jpg'),
+    });
     const vehicle = new THREE.Mesh(geometry, material);
     vehicle.name = 'MESH';
 
@@ -1202,10 +1193,14 @@ const G = (function () {
 
     // add to the scene
     scene.add(NEDframe);
+
+    // dispose geometry, material
+    geometry.dispose();
+    material.dispose();
   }
 
   /**
-   * Updates geometry in the scene based on the GUI input. Updates controls.
+   * Removes the old lander and creates a new one based on the GUI input. Updates controls.
    *
    * @param {object} lander - contains updated mesh geometry
    * @param {object} cond - contains updated initial conditions
@@ -1508,6 +1503,7 @@ const G = (function () {
 
   // return public API
   return {
+    MarsObj,
     manager,
     initScene,
     setLander,
