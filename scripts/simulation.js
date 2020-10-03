@@ -958,11 +958,10 @@ const G = (function () {
   renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
 
-  // configures resizing and full screen options
-  THREEx.WindowResize(renderer, camera);
+  // configures full screen options
   THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
 
-  // sets the light in the scene
+  // creates directional light in the scene
   const light = new THREE.DirectionalLight(0xcccccc, 1);
   light.position.set(1, 1, 5);
   scene.add(light);
@@ -987,6 +986,17 @@ const G = (function () {
 
   // defines animation variables
   let mixer; let clipAction; let isPlay = false;
+
+  // adds your own window resize functionality
+  function onWindowResize() {
+    // sets the aspect ratio to match the new browser window aspect ratio
+    camera.aspect = container.clientWidth / container.clientHeight;
+    // updates the camera's frustum
+    camera.updateProjectionMatrix();
+    // updates the size of the renderer AND the canvas
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  }
+  window.addEventListener('resize', onWindowResize);
 
   // //////////////////////////////////////
   //         MESHES IN THE SCENE
