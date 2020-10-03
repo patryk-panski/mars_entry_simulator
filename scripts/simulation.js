@@ -1009,8 +1009,11 @@ const G = (function () {
     // creates a loader for textures with a manager
     const loader = new THREE.TextureLoader(loadingManager);
     // creates geometry for the Sky, texture and material
-    const geometry = new THREE.SphereBufferGeometry(200, 32, 32);
+    const geometry = new THREE.SphereBufferGeometry(300, 32, 32);
     const texture = loader.load('images/stars.jpg');
+    // sets texture parameters
+    texture.encoding = THREE.sRGBEncoding;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
     const material = new THREE.MeshBasicMaterial({
       map: texture,
       side: THREE.BackSide,
@@ -1041,12 +1044,24 @@ const G = (function () {
     const bumpScale = 0.5;
     // creates a loader for textures
     const loader = new THREE.TextureLoader(manager);
-    // initializes an array for Mars materials
+    // initializes texture variables and an array for Mars materials
+    let textureMap; let textureBumpMap;
     const materialsArray = [];
+    // for each sphere element
     for (let i = 0; i < 8; i++) {
+      // creates textures for the colour map and bump map
+      textureMap = loader.load(`images/color/mars${i}.png`);
+      textureBumpMap = loader.load(`images/bump/mars${i}.png`);
+      // sets encoding for both maps
+      textureMap.encoding = THREE.LinearEncoding; // default
+      textureBumpMap.encoding = THREE.LinearEncoding; // default
+      // reduces texture blurring by setting the anistropic filtering level
+      // only needs to be done for the colour texture
+      textureMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      // assigns textures to the material
       materialsArray[i] = new THREE.MeshPhongMaterial({
-        map: loader.load(`images/color/mars${i}.png`),
-        bumpMap: loader.load(`images/bump/mars${i}.png`),
+        map: textureMap,
+        bumpMap: textureBumpMap,
         bumpScale,
       });
     }
