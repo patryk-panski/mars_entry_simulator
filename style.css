@@ -30,6 +30,16 @@ h1 {
   font-weight: bold;
   font-size: 45px;
   text-shadow: 2px 2px var(--color4);
+  z-index: 10;
+}
+
+/*the simulation container
+-----------------------------------------------------------*/
+#webgl {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
 }
 
 /*the instruction window
@@ -200,6 +210,7 @@ div#footnote {
   border-top: 1px solid var(--color3);
   border-left: 3px solid var(--color3);
   border-radius: 10px 0 0 10px;
+  z-index: 10;
 }
 
 div#footnote > p {
@@ -225,6 +236,7 @@ div#footnote button {
 section#outputs {
   position: fixed;
   top: 48px;
+  z-index: 10;
 }
 /*style div with the altitude and velocity outputs*/
 div#livedata {

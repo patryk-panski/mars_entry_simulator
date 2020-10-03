@@ -951,11 +951,14 @@ const G = (function () {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  // configures renderer
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.querySelector('#webgl').appendChild(renderer.domElement);
 
-  // config resizing and full screen
+  // configures renderer and adds it to the DOM
+  const container = document.querySelector('#webgl');
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  // configures resizing and full screen options
   THREEx.WindowResize(renderer, camera);
   THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
 
@@ -982,11 +985,11 @@ const G = (function () {
   // creates trackball controlls
   const controls = new THREE.TrackballControls(camera, renderer.domElement);
 
-  // define animation variables
+  // defines animation variables
   let mixer; let clipAction; let isPlay = false;
 
   // //////////////////////////////////////
-  //         OBJECTS IN THE SCENE
+  //         MESHES IN THE SCENE
   // //////////////////////////////////////
 
   /**
@@ -1289,7 +1292,7 @@ const G = (function () {
   Velocity.init();
 
   /**
-   * Configures some settings dependent on the NED frame.
+   * Configures camera and controls settings dependent on the NED frame.
    */
   function config() {
     // grabs a NED frame
@@ -1436,9 +1439,10 @@ const G = (function () {
   /**
    * Calls requestAnimationFrame in a loop and renders the scene.
    */
-  function render() {
+  function animate() {
     updateView();
-    window.requestAnimationFrame(render);
+
+    window.requestAnimationFrame(animate);
   }
 
   /**
@@ -1474,7 +1478,7 @@ const G = (function () {
     LanderObj,
     Velocity,
 
-    render,
+    animate,
     setTime,
     defineAnim,
     playAnim,
