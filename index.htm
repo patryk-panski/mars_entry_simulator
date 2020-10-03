@@ -162,7 +162,6 @@
           G.manager.onLoad = () => {
             document.querySelector('#loading').style.display = 'none'; // hide the progress bar
             document.querySelectorAll('.loaded').forEach(el => el.style.visibility = 'visible'); // show all relevant elements 
-            G.config(); //(VIEW)
             G.render(); //(VIEW)
             setupGUI(); //(CONTROLLER)
           };
