@@ -956,11 +956,6 @@ const G = (function () {
   // configures full screen options
   THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
 
-  // creates directional light in the scene
-  const light = new THREE.DirectionalLight(0xcccccc, 5);
-  light.position.set(1, 1, 5);
-  scene.add(light);
-
   // creates an object for keeping track of time
   const clock = new THREE.Clock();
 
@@ -1200,7 +1195,7 @@ const G = (function () {
       BODYframe.add(vehicle);
       NEDframe.add(BODYframe);
       scene.add(NEDframe);
-
+      
       // ROTATIONS //
       // set initial rotation of the mesh wrt the BODY frame
       vehicle.rotation.z = Math.PI / 2;
@@ -1226,6 +1221,13 @@ const G = (function () {
       const zPLANET = r / scale * Math.sin(lat);
       NEDframe.position.set(xPLANET, yPLANET, zPLANET);
 
+      /**
+       * Creates light in the scene which is added to the Lander object so that it can follow it
+       */
+      const light = new THREE.DirectionalLight(0xcccccc, 5);
+      light.position.set(0, 10, 0);
+      NEDframe.add(light);
+
       // THREE.js cleanup
       geometry.dispose();
     }
@@ -1235,6 +1237,7 @@ const G = (function () {
     };
   })(manager);
   LanderObj.init();
+
 
   /**
    * Creates a velocity object in the scene and defines its methods
