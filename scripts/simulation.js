@@ -921,17 +921,11 @@ const liveOutputs = (function () {
     // checks for meeting the right conditions to deploy a parachute
     if (altCond && machCond && dynPressCond) {
       successMessage.style.visibility = 'visible'; // display the success message
-
-      G.stopAnim(); // stops animations in the graphics module
-      G.Velocity.update('GUI'); // sets velocity vector length in the graphics module
     }
 
     // checks for conditions after crossing which one cannot deploy a parachute
     if (!altCond) {
       failureMessage.style.visibility = 'visible'; // display the failure message
-
-      G.stopAnim(); // stops animations in the graphics module
-      G.Velocity.update('GUI'); // sets velocity vector length in the graphics module
     }
   }
 
@@ -957,12 +951,13 @@ const G = (function () {
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
-
+  // turn on the physically correct lighting model
+  renderer.physicallyCorrectLights = true;
   // configures full screen options
   THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
 
   // creates directional light in the scene
-  const light = new THREE.DirectionalLight(0xcccccc, 1);
+  const light = new THREE.DirectionalLight(0xcccccc, 5);
   light.position.set(1, 1, 5);
   scene.add(light);
 
@@ -982,10 +977,7 @@ const G = (function () {
   };
 
   // creates trackball controlls
-  const controls = new THREE.TrackballControls(camera, renderer.domElement);
-
-  // defines animation variables
-  let mixer; let clipAction; let isPlay = false;
+  const controls = new THREE.TrackballControls(camera, container);
 
   // adds your own window resize functionality
   function onWindowResize() {
@@ -1355,137 +1347,137 @@ const G = (function () {
   // //////////////////////////////////////
   //        ANIMATION SYSTEM
   // //////////////////////////////////////
-
+  // defines animation variables
+  let mixer; let action; let isPlay = false;
   /**
-   * Defines keyframes, clip, mixer, and clipAction objects for animation system.
+   * Defines keyframes, clip, mixer, and clipAction objects for the animation system.
    *
    * @param {object} results.arr - arrays with the results
    */
   function defineAnim({ arr }) {
+    // grabs NED frame object
     const NEDframe = scene.getObjectByName('NED');
 
-    // ROTATION NED
+    // creates a keyframes track for NED ROTATION
     const quaternionNKF = new THREE.QuaternionKeyframeTrack('.quaternion', arr.t, arr.rotN);
 
-    // POSITION NED
+    // creates a keyframes track for NED POSITION
     const positionKF = new THREE.VectorKeyframeTrack('.position', arr.t, arr.pos);
 
-    // ROTATION BODY
+    // creates a keyframes track for BODY ROTATION
     const quaternionBKF = new THREE.QuaternionKeyframeTrack('.children[1].quaternion', arr.t, arr.rotB); // BODYframe is children[1] of NEDframe
 
-    // create an animation sequence with the track
-    const duration = arr.t[arr.t.length - 1];
-    const clip = new THREE.AnimationClip('entry', duration, [quaternionNKF, positionKF, quaternionBKF]);
+    // creates an Animation Clip from the tracks
+    const tracks = [quaternionNKF, positionKF, quaternionBKF];
+    const duration = -1; // use -1 to automatically calculate the length from the array of tracks
+    const clip = new THREE.AnimationClip('entry', duration, tracks);
+    clip.optimize(); // optimizes each track by removing equivalent sequential keys
 
-    // set up the AnimationMixer for the lander
+    // sets up the Animation Mixer for the lander
     mixer = new THREE.AnimationMixer(NEDframe);
 
-    // create a ClipAction
-    clipAction = mixer.clipAction(clip);
-    clipAction.setLoop(THREE.LoopOnce);
+    // creates an Animation Action and configures it
+    action = mixer.clipAction(clip);
+    action.loop = THREE.LoopOnce; // makes the animation play once
 
-    // create event listener when the loop finishes
-    mixer.addEventListener('finished', () => {
-      clipAction.stop();
-      isPlay = false;
-      G.Velocity.update('GUI');
+    // adds event listener for when the action finishes
+    mixer.addEventListener('finished', (e) => {
+      action.stop(); // this method also calls reset()
+      isPlay = false; // the animation is no longer playing
+      Velocity.update('GUI'); // updates the velocity vector
+      liveOutputs.init(); // updates the live outputs
     });
   }
 
   // play animation
   function playAnim() {
-    // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+    // does not respond when there are no results
+    if (Object.keys(results.arr).length === 0) {
       const calcnotpressed = document.querySelector('#calcnotpressed');
       calcnotpressed.style.visibility = 'visible';
       return;
     }
 
     if (!isPlay) {
-      clipAction.play();
-      clipAction.timeScale = 1;
+      action.play();
+      action.timeScale = 1;
       isPlay = true;
-      clipAction.paused = false;
-    } else {
-      clipAction.timeScale = 1;
+      action.paused = false;
+    } else { // if the animation is already playing only change the speed
+      action.timeScale = 1;
     }
   }
 
-  // play animation 5 times faster
+  // plays animation 5 times faster
   function playAnimX5() {
-    // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+    // does not respond when there are no results
+    if (Object.keys(results.arr).length === 0) {
       const calcnotpressed = document.querySelector('#calcnotpressed');
       calcnotpressed.style.visibility = 'visible';
       return;
     }
 
     if (!isPlay) {
-      clipAction.play();
-      clipAction.timeScale = 5;
+      action.play();
+      action.timeScale = 5;
       isPlay = true;
-      clipAction.paused = false;
-    } else {
-      clipAction.timeScale = 5;
+      action.paused = false;
+    } else { // if the animation is already playing only change the speed
+      action.timeScale = 5;
     }
   }
 
-  // pause running animation
+  // pauses running animation
   function pauseAnim() {
-    // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+    // does not respond when there are no results
+    if (Object.keys(results.arr).length === 0) {
       const calcnotpressed = document.querySelector('#calcnotpressed');
       calcnotpressed.style.visibility = 'visible';
       return;
     }
 
-    clipAction.paused = true;
+    action.paused = true;
     isPlay = false;
   }
 
   // stops running animation
   function stopAnim() {
-    // don't respond when there are no results
-    if (Object.keys(results.arr).length === 0 && results.arr.constructor === Object) {
+    // does not respond when there are no results
+    if (Object.keys(results.arr).length === 0) {
       const calcnotpressed = document.querySelector('#calcnotpressed');
       calcnotpressed.style.visibility = 'visible';
       return;
     }
 
-    clipAction.stop(); // this method also calls reset()
+    action.stop(); // this method also calls reset()
     isPlay = false;
   }
 
-  // set clipAction time
-  function setTime(time) { clipAction.time = time; }
-
-  // /////////////////render loop
+  // sets clip Action time
+  function setTime(time) { action.time = time; }
 
   /**
    * Calls requestAnimationFrame in a loop and renders the scene.
    */
   function animate() {
     updateView();
-
-    window.requestAnimationFrame(animate);
+    renderer.render(scene, camera); // renders the scene
+    window.requestAnimationFrame(animate); // calls the animate function in a loop
   }
 
   /**
    * Renders the scene and updates changing variables in the scene.
    */
   function updateView() {
-    renderer.render(scene, camera); // updates graphics
-
     const delta = clock.getDelta(); // get time passed from last callback
 
     if (mixer) {
-      const currentTime = clipAction.time; // get the current real simulation time
-      // TODO create an array with current parameters and pass them to all update functions instead of calculating them for each of them separately
+      const currentTime = action.time; // get the current real simulation time
       // if animation is not playing stop updating live outputs
       if (isPlay) {
         Velocity.update('animation', currentTime); // updates velocity vector
-        livePlots.update(currentTime, results); // updates plots
-        liveOutputs.update(currentTime, results); // updates altitude and velocity
+        livePlots.update(currentTime, results); // updates live plots
+        liveOutputs.update(currentTime, results); // updates live outputs
       }
       mixer.update(delta);
     }
@@ -1592,7 +1584,7 @@ function setupGUI() {
   // play
   folder.add(G, 'playAnim').name('Play');
   // play x5
-  folder.add(G, 'playAnimX5').name('Play x5');
+  folder.add(G, 'playAnimX5').name('Play Faster');
   // stop
   const stop = folder.add(G, 'stopAnim').name('Stop');
   stop.onFinishChange(() => G.Velocity.update('GUI'));

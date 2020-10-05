@@ -153,7 +153,6 @@
       
         // when DOM is loaded run methods from main JS file
         document.addEventListener('DOMContentLoaded', () => { 
-          // lander.defineMesh(); //(MODEL)
           livePlots.init(); //(VIEW)
           liveOutputs.init(); //(VIEW)
         
@@ -161,7 +160,7 @@
           G.manager.onLoad = () => {
             document.querySelector('#loading').style.display = 'none'; // hide the progress bar
             document.querySelectorAll('.loaded').forEach(el => el.style.visibility = 'visible'); // show all relevant elements 
-            G.animate(); //(VIEW)
+            G.animate(); // start the render loop (VIEW)
             setupGUI(); //(CONTROLLER)
           };
         }, false);
