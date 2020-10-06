@@ -993,27 +993,39 @@ const G = (function () {
    * Creates a starry sky in the scene
    */
   const SkyObj = (function (loadingManager) {
-    // creates a loader for textures with a manager
-    const loader = new THREE.TextureLoader(loadingManager);
-    // creates geometry for the Sky, texture and material
-    const geometry = new THREE.SphereBufferGeometry(300, 32, 32);
-    const texture = loader.load('images/stars.jpg');
-    // sets texture parameters
-    texture.encoding = THREE.sRGBEncoding;
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.BackSide,
-    });
-    // creates a mesh
-    const mesh = new THREE.Mesh(geometry, material);
-    // adds the mesh to the scene
-    scene.add(mesh);
+    const amount = 1500; // defines the number of stars
+    // creates a stars group
+    const stars = new THREE.Group();
+    stars.name = 'stars';
+    // creates a star for each loop
+    let size; let geometry; let star;
+    // defines material for a star
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    for (let i = 0; i < amount; i++) {
+      // makes a star
+      size = Math.random() * 0.18 + 0.08; // randomize the size of each star, between 0.08 and 0.26
+      geometry = new THREE.SphereBufferGeometry(size, 8, 8);
+      star = new THREE.Mesh(geometry, material);
 
+      const radius = 100; // the radius of the sphere on which the stars will appear
+      const z = Math.random() * 2 * radius - radius; // randomizes the z-coordinate
+      const lam = Math.random() * 2 * Math.PI; // randomizes the longitude
+      // calculates x and y coordinates from the known variables
+      const x = radius * Math.cos(lam) * Math.sqrt(1 - (z / radius) * (z / radius));
+      const y = radius * Math.sin(lam) * Math.sqrt(1 - (z / radius) * (z / radius));
+      // assigns positions to a star
+      star.position.z = z;
+      star.position.x = x;
+      star.position.y = y;
+      // adds a star to the stars group
+      stars.add(star);
+      // Three.js Cleanup
+      geometry.dispose();
+    }
     // Three.js Cleanup
-    geometry.dispose();
-    texture.dispose();
     material.dispose();
+    // adds all the stars to the scene
+    scene.add(stars);
   })(manager);
 
   /**
@@ -1195,7 +1207,7 @@ const G = (function () {
       BODYframe.add(vehicle);
       NEDframe.add(BODYframe);
       scene.add(NEDframe);
-      
+
       // ROTATIONS //
       // set initial rotation of the mesh wrt the BODY frame
       vehicle.rotation.z = Math.PI / 2;
