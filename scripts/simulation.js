@@ -1015,6 +1015,7 @@ const G = (function () {
       star.position.z = z;
       star.position.x = x;
       star.position.y = y;
+
       // adds a star to the stars group
       stars.add(star);
       // Three.js Cleanup
@@ -1077,6 +1078,7 @@ const G = (function () {
       material.shininess = 0;
       // creates a mesh
       mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false; // all mars parts get rendered every frame even if it isn't visible, this is to avoid scene lags
       mars.add(mesh);
       // THREE.js Cleanup
       materialsArray[i].dispose();
