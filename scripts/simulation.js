@@ -971,8 +971,6 @@ const G = (function () {
     progressBarElem.style.transform = `scaleX(${progress})`;
   };
 
-  // creates trackball controlls
-  const controls = new THREE.TrackballControls(camera, container);
 
   // adds your own window resize functionality
   function onWindowResize() {
@@ -1035,6 +1033,7 @@ const G = (function () {
     // grabs scale and radius of the Mars
     const { scale } = lander.mesh;
     const radius = Mars.r / scale;
+    // console.log(radius);
     // creates Mars coordinate system
     const marsFrame = createAxes('PLANET', radius + 10);
 
@@ -1326,17 +1325,26 @@ const G = (function () {
   /**
    * Configures camera and controls settings dependent on the NED frame.
    */
+  const controls = new THREE.TrackballControls(camera, container);
   function config() {
     // grabs a NED frame
     const NEDframe = scene.getObjectByName('NED');
+    // const BODYframe = scene.getObjectByName('BODY');
 
-    // configures camera
-    camera.position.copy(NEDframe.position).add(new THREE.Vector3(-2, -2, 0.5));
+    // positions camera
+    // and configures trackball controlls
+    camera.position.set(-11.822327, -3.95953, 32.913791);
+    camera.up = new THREE.Vector3(0, 0, 1);
+    controls.update();
 
     // configures controls
-    controls.rotateSpeed = 0.5;
-    controls.noPan = true;
     controls.target = NEDframe.position;
+    controls.rotateSpeed = 2;
+    controls.zoomSpeed = 2;
+    controls.noPan = true;
+    controls.minDistance = 0.1;
+    controls.maxDistance = 95;
+    controls.staticMoving = true;
   }
   config();
   /**
@@ -1497,12 +1505,30 @@ const G = (function () {
       mixer.update(delta);
     }
 
+    // define the behaviour of the camera when it is about to cross the Mars surface
+    const currentPosition = camera.position; // the current camera position (three js vector)
+    const distance = currentPosition.distanceTo(new THREE.Vector3(0, 0, 0)); // calculate the distance between the centre of Mars and the camera
+    if (distance < 34) { // if the distance is smaller than Mars radius then change the position of the camera
+      const { x, y, z } = currentPosition; // current camera coordinates
+      const delr = 34 - distance; // desired change of distance
+      const sign = (x > 0) ? 1 : -1;
+      // based on your calculations
+      const delx = sign * 2 * delr / Math.sqrt(1 + (y / x) * (y / x) + (z / x) * (z / x));
+      const dely = y * delx / x;
+      const delz = z * delx / x;
+      // set camera position
+      camera.position.set(x + delx, y + dely, z + delz);
+      camera.up = new THREE.Vector3(0, 0, 1);
+    }
+
+
     controls.update(); // updates camera controls
     stats.update(); // updates the performance monitor
   }
 
   // return public API
   return {
+    camera,
     scene,
     manager,
 
