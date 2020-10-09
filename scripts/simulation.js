@@ -1106,6 +1106,24 @@ const G = (function () {
     return marsFrame;
   })(manager);
 
+  // const MarsAtmo = (function () {
+  //   // create atmosphere
+  //   // grabs scale and radius of the Mars
+  //   const { scale } = lander.mesh;
+  //   const radius = Mars.r / scale;
+  //
+  //   const geometry = new THREE.SphereGeometry(1.01 * radius, 64, 64);
+  //   const material = THREEx.createAtmosphereMaterial();
+  //   material.uniforms.glowColor.value.set(0xfda600);
+  //   material.uniforms.coeficient.value = 0.8;
+  //   material.uniforms.power.value = 2.2;
+  //   // material.side = THREE.DoubleSide;
+  //   const mesh = new THREE.Mesh(geometry, material);
+  //   mesh.scale.multiplyScalar(1.01);
+  //
+  //   scene.add(mesh);
+  // })();
+
   /**
    * Creates a lander object in the scene and defines methods on the lander
    */
@@ -1123,7 +1141,7 @@ const G = (function () {
       side: THREE.DoubleSide,
       // map: loader.load('images/carbon-fiber-texture.jpg'),
     }), new THREE.MeshBasicMaterial({
-      color: 0x0c00ee,
+      color: 0x000000,
       wireframe: true,
       wireframeLinecap: 'round', // default
       wireframeLinejoin: 'round', // default
