@@ -995,7 +995,7 @@ const G = (function () {
    * Creates a starry sky in the scene
    */
   const SkyObj = (function (loadingManager) {
-    const amount = 1500; // defines the number of stars
+    const amount = 3000; // defines the number of stars
     // creates a stars group
     const stars = new THREE.Group();
     stars.name = 'stars';
@@ -1048,13 +1048,14 @@ const G = (function () {
     // creates a loader for textures
     const loader = new THREE.TextureLoader(manager);
     // initializes texture variables and an array for Mars materials
-    let textureMap; let textureBumpMap;
+    let textureMap; let textureBumpMap; let displacementMap;
     const materialsArray = [];
     // for each sphere element
     for (let i = 0; i < 8; i++) {
       // creates textures for the colour map and bump map
       textureMap = loader.load(`images/color/mars${i}.png`);
       textureBumpMap = loader.load(`images/bump/mars${i}.png`);
+      displacementMap = textureBumpMap;
       // sets encoding for both maps
       textureMap.encoding = THREE.LinearEncoding; // default
       textureBumpMap.encoding = THREE.LinearEncoding; // default
@@ -1066,6 +1067,7 @@ const G = (function () {
         map: textureMap,
         bumpMap: textureBumpMap,
         bumpScale,
+        displacementMap,
       });
     }
 
@@ -1075,7 +1077,7 @@ const G = (function () {
     let material; let geometry; let mesh; // define variables used for each part
 
     for (let i = 0; i < 8; i++) {
-      geometry = new THREE.SphereBufferGeometry(radius, 32, 32, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
+      geometry = new THREE.SphereBufferGeometry(radius, 60, 60, Math.PI / 2 * (i % 4), Math.PI / 2, Math.PI / 2 * Math.floor(i / 4), Math.PI / 2);
       material = materialsArray[i];
       // makes the surface of the Mars matt
       material.specular = new THREE.Color('black');
