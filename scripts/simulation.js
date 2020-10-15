@@ -1135,13 +1135,13 @@ const G = (function () {
 
     // defines THREE.js constants
     const materials = [new THREE.MeshBasicMaterial({
-      color: 0x708090,
+      color: 0x505050,
       wireframe: false,
       transparent: true,
       side: THREE.DoubleSide,
       // map: loader.load('images/carbon-fiber-texture.jpg'),
     }), new THREE.MeshBasicMaterial({
-      color: 0x000000,
+      color: 0x05e7f2,
       wireframe: true,
       wireframeLinecap: 'round', // default
       wireframeLinejoin: 'round', // default
