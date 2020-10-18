@@ -1141,7 +1141,7 @@ const G = (function () {
       side: THREE.DoubleSide,
       // map: loader.load('images/carbon-fiber-texture.jpg'),
     }), new THREE.MeshBasicMaterial({
-      color: 0x05e7f2,
+      color: 0xffffff,
       wireframe: true,
       wireframeLinecap: 'round', // default
       wireframeLinejoin: 'round', // default
