@@ -1040,7 +1040,7 @@ const G = (function () {
     const radius = Mars.r / scale;
     // console.log(radius);
     // creates Mars coordinate system
-    const marsFrame = createAxes('PLANET', radius + 10);
+    const marsFrame = createAxes('PLANET', radius + 10); // + 10);
 
     // MATERIAL //
     // defines the scale for the bump map (perceived depth of the surface)
@@ -1068,6 +1068,8 @@ const G = (function () {
         bumpMap: textureBumpMap,
         bumpScale,
         displacementMap,
+        displacementScale: 0.8,
+        displacementBias: -0.28, // set this so that the mars radius is correct (look at coordinates)
       });
     }
 
